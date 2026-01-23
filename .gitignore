@@ -1,11 +1,41 @@
-.DS_Store
-node_modules
-.turbo
-*.log
-dist
-dist-ssr
-*.local
+# .gitignore
+# Node
+node_modules/
+dist/
+build/
 .env
-.cache
-server/dist
-public/dist
+.env.*
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# IDE
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# OS
+.DS_Store
+Thumbs.db
+
+# TypeScript
+*.tsbuildinfo
+
+# Misc
+coverage/
+*.local
+*.cache
+*.tmp
+
+# Git
+.git/
+
+.eslintcache
+
+examples
