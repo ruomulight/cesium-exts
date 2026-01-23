@@ -16,9 +16,9 @@
 
 ### 核心库
 
-| 包名                                       | 版本  | 描述                                      |
-| ------------------------------------------ | ----- | ----------------------------------------- |
-| [cesium-exts](./packages/engine)           | 1.0.0 | 核心扩展库，包含热力图、风场等可视化组件  |
+| 包名                             | 版本  | 描述                                     |
+| -------------------------------- | ----- | ---------------------------------------- |
+| [cesium-exts](./packages/engine) | 1.0.0 | 核心扩展库，包含热力图、风场等可视化组件 |
 
 ### 功能模块
 
@@ -66,14 +66,14 @@ pnpm format
 ## 📖 使用示例
 
 ```typescript
-import { HeatLayer, WindLayer, cesiumUtils } from 'cesium-exts';
+import { HeatLayer, WindLayer, cesiumUtils } from "cesium-exts";
 
 // 创建热力图图层
 const heatLayer = new HeatLayer(viewer, {
   gradient: {
-    0.0: 'blue',
-    0.5: 'yellow',
-    1.0: 'red'
+    0.0: "blue",
+    0.5: "yellow",
+    1.0: "red"
   },
   radius: 20,
   blur: 0.85
@@ -107,12 +107,12 @@ with-vite-react/
 
 ## 🛠️ 可用命令
 
-| 命令           | 说明                           |
-| -------------- | ------------------------------ |
-| `pnpm dev`     | 启动开发服务器                 |
-| `pnpm build`   | 构建所有包                     |
-| `pnpm lint`    | 运行 ESLint 检查代码           |
-| `pnpm format`  | 使用 Prettier 格式化所有文件   |
+| 命令          | 说明                         |
+| ------------- | ---------------------------- |
+| `pnpm dev`    | 启动开发服务器               |
+| `pnpm build`  | 构建所有包                   |
+| `pnpm lint`   | 运行 ESLint 检查代码         |
+| `pnpm format` | 使用 Prettier 格式化所有文件 |
 
 ## 🔨 构建产物
 
