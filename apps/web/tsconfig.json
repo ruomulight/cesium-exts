@@ -1,71 +1,41 @@
 {
   "compilerOptions": {
-    // 生成对应的 .map 文件，便于调试源码（将编译后的代码映射回 TypeScript 源码）
-    "sourceMap": true,
-
-    // 生成 .d.ts 类型声明文件（用于库开发或类型共享）
-    "declaration": true,
-
-    // 为 .d.ts 文件生成对应的 .d.ts.map 映射文件，便于追踪类型来源
-    "declarationMap": true,
-
-    // 对索引访问（如 obj[key]）启用更严格的类型检查，防止隐式 any
-    "noUncheckedIndexedAccess": true,
-
-    // 要求可选属性必须显式赋值为 undefined 或提供值，避免歧义
-    "exactOptionalPropertyTypes": true,
-
-    // 强制每个文件都能被单独编译（无跨文件语义依赖），提升构建性能和兼容性
-    "isolatedModules": true,
-
-    // 编译目标为 ES2022，支持现代 JavaScript 特性
-    "target": "ES2022",
-    // 使用标准的类字段定义方式（符合 ES2022 规范）
-    "useDefineForClassFields": true,
-    // 引入的类型库：ES2022 标准库、DOM API、DOM 可迭代对象
-    "lib": ["ES2022", "DOM", "DOM.Iterable"],
-    // 模块系统使用 ESNext（最新的 ES 模块标准）
-    "module": "ESNext",
-    // 引入 Vite 客户端类型定义
-    "types": ["vite/client"],
-    // 跳过库文件的类型检查，加快编译速度
-    "skipLibCheck": true,
-
-    /* 打包工具模式配置 */
-    // 模块解析策略使用 bundler 模式（适配 Vite 等现代打包工具）
+    "target": "esnext",
+    "module": "esnext",
     "moduleResolution": "bundler",
-    // 允许导入 .ts/.tsx 扩展名的文件（打包工具会处理）
-    "allowImportingTsExtensions": true,
-    // 保持模块语法的原始形式（不转换 import/export）
-    "verbatimModuleSyntax": true,
-    // 强制将所有文件视为模块
-    "moduleDetection": "force",
-    // 不生成编译输出文件（由 Vite 处理编译）
-    "noEmit": true,
-    // JSX 转换方式：使用 React 17+ 的新 JSX 转换（自动导入 jsx-runtime）
-    "jsx": "react-jsx",
-
-    /* 代码检查配置 */
-    // 启用所有严格类型检查选项
-    "strict": true,
-    // 不报告未使用的局部变量（设为 false 以提高开发灵活性）
-    "noUnusedLocals": false,
-    // 不报告未使用的函数参数（设为 false 以提高开发灵活性）
-    "noUnusedParameters": false,
-    // 仅允许可擦除的语法（如类型注解），禁止运行时语法
-    "erasableSyntaxOnly": true,
-    // 检查 switch 语句中是否存在 fallthrough 情况
-    "noFallthroughCasesInSwitch": true,
-    // 检查导入语句是否有副作用（提高代码安全性）
-    "noUncheckedSideEffectImports": true,
-
-    // 模块解析的基础路径（当前目录）
+    "lib": ["esnext", "dom"],
     "baseUrl": ".",
-    // 路径别名配置：@/* 映射到 ./src/* 目录
     "paths": {
-      "@/*": ["./src/*"]
-    }
+      "@/*": ["src/*"]
+    },
+
+    // 严格性和类型检查相关配置
+    "strict": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+
+    // 模块和兼容性相关配置
+    "allowSyntheticDefaultImports": true,
+    "esModuleInterop": true,
+    "resolveJsonModule": true,
+
+    // 调试和兼容性相关配置
+    "sourceMap": true,
+    "useDefineForClassFields": true,
+    "allowJs": true,
+
+    // 类型声明相关配置
+    "types": ["node"]
   },
-  // 包含的文件范围：src 目录和所有 .d.ts 类型声明文件
-  "include": ["src", "types/**.d.ts"]
+
+  "include": [
+    "types/**/*.d.ts",
+    "mock/**/*.ts",
+    "src/**/*.ts",
+    "src/**/*.vue",
+    "vite.config.ts",
+    "eslint.config.ts",
+    "uno.config.ts"
+  ],
+  "exclude": ["node_modules", "dist"]
 }
