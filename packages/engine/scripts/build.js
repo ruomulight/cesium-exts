@@ -9,8 +9,6 @@ import { rollup } from "rollup";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const projectRoot = path.resolve(__dirname, "..").replace(/\\/g, "/");
 
-console.log(__dirname);
-console.log(projectRoot);
 /**
  * 工作区源文件配置
  * 定义了每个工作区需要包含的源文件路径模式 (glob patterns)
@@ -19,7 +17,6 @@ console.log(projectRoot);
 const workspaceSourceFiles = {
   // 引擎核心模块，包含 Utils 和功能模块
   // 使用绝对路径避免路径混淆
-  // 注意：glob 模式必须使用正斜杠,即使在 Windows 上也是如此
   engine: ["src/Utils/**/*.ts", "src/modules/**/index.ts"]
 };
 

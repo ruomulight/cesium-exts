@@ -1,5 +1,23 @@
 {
   "compilerOptions": {
+    // 生成对应的 .map 文件，便于调试源码（将编译后的代码映射回 TypeScript 源码）
+    "sourceMap": true,
+
+    // 生成 .d.ts 类型声明文件（用于库开发或类型共享）
+    "declaration": true,
+
+    // 为 .d.ts 文件生成对应的 .d.ts.map 映射文件，便于追踪类型来源
+    "declarationMap": true,
+
+    // 对索引访问（如 obj[key]）启用更严格的类型检查，防止隐式 any
+    "noUncheckedIndexedAccess": true,
+
+    // 要求可选属性必须显式赋值为 undefined 或提供值，避免歧义
+    "exactOptionalPropertyTypes": true,
+
+    // 强制每个文件都能被单独编译（无跨文件语义依赖），提升构建性能和兼容性
+    "isolatedModules": true,
+
     // 编译目标为 ES2022，支持现代 JavaScript 特性
     "target": "ES2022",
     // 使用标准的类字段定义方式（符合 ES2022 规范）

@@ -7,8 +7,6 @@ import dts from "rollup-plugin-dts";
 import json from "@rollup/plugin-json";
 import pkg from "./package.json" with { type: "json" };
 
-const isProd = process.env.NODE_ENV === "production";
-
 /**
  * 定义外部依赖列表，这些依赖不会被打包到最终输出中
  * 包括：
@@ -31,19 +29,18 @@ const getBasePlugins = () =>
       tsconfig: "./tsconfig.json"
     }),
 
-    // 生产环境：启用代码压缩和混淆
-    isProd &&
-      terser({
-        compress: {
-          drop_console: true, // 移除 console.log 调用
-          drop_debugger: true, // 移除 debugger 语句
-          passes: 2 // 执行两次压缩以获得更小的体积
-        },
-        mangle: true, // 混淆变量名以减小文件体积
-        format: {
-          comments: false // 移除所有注释
-        }
-      }),
+    // 启用代码压缩和混淆
+    terser({
+      compress: {
+        drop_console: true, // 移除 console.log 调用
+        drop_debugger: true, // 移除 debugger 语句
+        passes: 2 // 执行两次压缩以获得更小的体积
+      },
+      mangle: true, // 混淆变量名以减小文件体积
+      format: {
+        comments: false // 移除所有注释
+      }
+    }),
 
     // 解析 node_modules 中的第三方模块
     resolve(),
