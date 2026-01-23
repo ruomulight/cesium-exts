@@ -1,0 +1,53 @@
+{
+  "compilerOptions": {
+    // 设置模块解析的基准目录（用于相对路径导入）
+    "baseUrl": ".",
+
+    // 指定生成的模块代码使用 ES 模块语法（import/export），适用于现代打包工具（如 Vite、Webpack）
+    "module": "esnext",
+
+    // 指定编译目标 JavaScript 的版本为最新标准（不进行降级转译）
+    "target": "esnext",
+
+    // 不自动包含任何全局类型定义（如 DOM、ES5 等），需显式引入所需类型
+    "types": [],
+
+    // 指定要包含在编译中的 JavaScript 语言库（这里只包含最新的 ECMAScript 特性）
+    "lib": ["esnext", "dom", "dom.iterable"],
+
+    // 生成对应的 .map 文件，便于调试源码（将编译后的代码映射回 TypeScript 源码）
+    "sourceMap": false,
+
+    // 生成 .d.ts 类型声明文件（用于库开发或类型共享）
+    "declaration": false,
+
+    // 为 .d.ts 文件生成对应的 .d.ts.map 映射文件，便于追踪类型来源
+    "declarationMap": false,
+
+    // 对索引访问（如 obj[key]）启用更严格的类型检查，防止隐式 any
+    "noUncheckedIndexedAccess": true,
+
+    // 要求可选属性必须显式赋值为 undefined 或提供值，避免歧义
+    "exactOptionalPropertyTypes": true,
+
+    // 启用所有严格类型检查选项（包括 strictNullChecks、strictFunctionTypes 等）
+    "strict": true,
+
+    // 指定模块解析策略为“bundler”模式（适用于 Vite、Webpack、Rollup 等现代打包器）
+    // 不再使用传统的 Node.js 模块解析规则
+    "moduleResolution": "bundler",
+
+    // 强制每个文件都能被单独编译（无跨文件语义依赖），提升构建性能和兼容性
+    "isolatedModules": true,
+
+    // 禁止未使用的副作用导入（实验性选项，帮助发现无效 import）
+    "noUncheckedSideEffectImports": true,
+
+    // 强制 TypeScript 将所有文件视为模块（即使没有 import/export），避免全局作用域污染
+    "moduleDetection": "force",
+
+    // 跳过对 node_modules 中 .d.ts 文件的类型检查，加快编译速度（常用于解决第三方库类型冲突）
+    "skipLibCheck": true
+  },
+  "include": ["index.ts", "**/*.ts"]
+}
