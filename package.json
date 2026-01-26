@@ -1,5 +1,5 @@
 {
-  "name": "with-vite-react",
+  "name": "cesium-exts-monorepo",
   "private": true,
   "scripts": {
     "build": "turbo run build",
