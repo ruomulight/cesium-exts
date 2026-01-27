@@ -33,7 +33,7 @@
 ### 环境要求
 
 - [Node.js](https://nodejs.org/) >= 22.18.0
-- [pnpm](https://pnpm.io/) >= 8.15.6
+- [pnpm](https://pnpm.io/) >= 10.10.0
 - [Cesium](https://github.com/CesiumGS/cesium) >= 1.136.0
 
 ### 安装
