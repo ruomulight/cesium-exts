@@ -90,7 +90,15 @@ heatLayer.addData({
 ## 🏗️ 项目结构
 
 ```
-with-vite-react/
+cesium-exts/
+├── apps/
+│   └── web/                 # 开发演示应用 (Vite + React)
+│       ├── src/             # 应用源码
+│       ├── public/          # 静态资源
+│       ├── dist/            # 构建输出
+│       ├── vite.config.ts   # Vite 配置
+│       ├── eslint.config.js # ESLint 配置
+│       └── package.json
 ├── packages/
 │   └── engine/              # 核心扩展库
 │       ├── src/
@@ -99,10 +107,19 @@ with-vite-react/
 │       │   │   └── WindLayer/
 │       │   └── Utils/       # 工具函数
 │       ├── scripts/         # 构建脚本
+│       │   └── build.js     # 构建逻辑
 │       ├── dist/            # 构建输出
-│       └── index.ts         # 入口文件
-├── turbo.json              # Turborepo 配置
-└── pnpm-workspace.yaml     # pnpm workspace 配置
+│       ├── types/           # 类型定义
+│       ├── index.ts         # 自动生成的入口文件
+│       ├── gulpfile.js      # Gulp 任务配置
+│       ├── rollup.config.js # Rollup 打包配置
+│       ├── eslint.config.js # ESLint 配置
+│       └── package.json
+├── .husky/                  # Git hooks
+├── turbo.json               # Turborepo 配置
+├── pnpm-workspace.yaml      # pnpm workspace 配置
+├── prettier.config.js       # Prettier 配置
+└── package.json             # 根 package.json
 ```
 
 ## 🛠️ 可用命令
