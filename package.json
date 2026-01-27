@@ -1,14 +1,17 @@
 {
   "name": "cesium-exts-monorepo",
   "private": true,
+  "type": "module",
   "scripts": {
     "build": "turbo run build",
     "dev": "turbo run dev",
     "lint": "turbo run lint",
-    "format": "prettier --write \"**/*.{js,ts,mjs,cjs,json,tsx,css,less,scss,vue,html,md}\""
+    "format": "prettier --write \"**/*.{js,ts,mjs,cjs,json,tsx,css,less,scss,vue,html,md}\"",
+    "prepare": "husky || true"
   },
   "devDependencies": {
     "eslint": "^9.39.2",
+    "husky": "^9.1.7",
     "prettier": "^3.8.1",
     "turbo": "^2.7.5"
   },
