@@ -1,5 +1,7 @@
 import * as Cesium from "cesium";
 
+import pkg from "package.json";
+
 /**
  * 获取并返回当前 Cesium 库的版本号字符串
  *
@@ -12,23 +14,23 @@ import * as Cesium from "cesium";
  * ```
  */
 export function cesiumVersion(): string {
-  return (Cesium as any).VERSION;
+  return Cesium.globalThis.CESIUM_VERSION;
 }
 
-// /**
-//  * 获取并返回当前 cesium-exts 库的版本号
-//  *
-//  * @returns {string} cesium-exts 的版本号
-//  *
-//  * @example
-//  * ```ts
-//  * const version = cesiumExtsVersion();
-//  * console.log('当前的 cesium-exts 版本:', version);
-//  * ```
-//  */
-// export function cesiumExtsVersion(): string {
-//   return pkg.version;
-// }
+/**
+ * 获取并返回当前 cesium-exts 库的版本号
+ *
+ * @returns {string} cesium-exts 的版本号
+ *
+ * @example
+ * ```ts
+ * const version = cesiumExtsVersion();
+ * console.log('当前的 cesium-exts 版本:', version);
+ * ```
+ */
+export function cesiumExtsVersion(): string {
+  return pkg.version;
+}
 
 /**
  * 平滑地飞行到指定目标的相机视角（基于包围球计算）。
@@ -100,4 +102,4 @@ export function flyToTarget(
   });
 }
 
-export default { flyToTarget, cesiumVersion };
+export default { cesiumVersion, cesiumExtsVersion, flyToTarget };
