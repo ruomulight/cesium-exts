@@ -25,7 +25,7 @@
   "author": "yuanan",
   "license": "ISC",
   "peerDependencies": {
-    "cesium": "^1.136.0"
+    "cesium": "catalog:"
   },
   "devDependencies": {
     "@rollup/plugin-commonjs": "^29.0.0",
@@ -34,7 +34,7 @@
     "@rollup/plugin-terser": "^0.4.4",
     "@rollup/plugin-typescript": "^12.3.0",
     "@types/node": "^24.10.1",
-    "cesium": "^1.136.0",
+    "cesium": "catalog:",
     "eslint": "^9.39.2",
     "globals": "^16.5.0",
     "globby": "^16.1.0",

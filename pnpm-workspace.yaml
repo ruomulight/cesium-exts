@@ -1,3 +1,5 @@
 packages:
   - "apps/*"
   - "packages/*"
+catalog:
+  cesium: '^1.137.0'
