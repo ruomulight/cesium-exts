@@ -1,41 +1,85 @@
 {
   "compilerOptions": {
-    "target": "esnext",
-    "module": "esnext",
+    // 编译目标：使用 ES2020 标准
+    "target": "ES2020",
+
+    // 使用标准的类字段定义方式
+    "useDefineForClassFields": true,
+
+    // 编译时引入的类型库
+    "lib": ["ES2020", "DOM", "DOM.Iterable"],
+
+    // 模块系统：使用 ES 模块
+    "module": "ESNext",
+
+    // 跳过对库文件的类型检查（提升编译速度）
+    "skipLibCheck": true,
+
+    /* 打包工具模式配置 */
+    // 模块解析策略：适配 Vite/esbuild 等现代打包工具
     "moduleResolution": "bundler",
-    "lib": ["esnext", "dom"],
+
+    // 允许导入时包含 .ts/.tsx 扩展名
+    "allowImportingTsExtensions": true,
+
+    // 允许导入 JSON 文件
+    "resolveJsonModule": true,
+
+    // 每个文件作为独立模块编译（Vite 必需）
+    "isolatedModules": true,
+
+    // 不生成编译输出文件（由 Vite 处理）
+    "noEmit": true,
+
+    // JSX 转换方式：使用 React 17+ 的新 JSX 转换
+    "jsx": "react-jsx",
+
+    /* 路径映射配置 */
+    // 设置基础路径为项目根目录
     "baseUrl": ".",
+
+    // 路径别名：@/ 映射到 src/ 目录
     "paths": {
       "@/*": ["src/*"]
     },
 
-    // 严格性和类型检查相关配置
+    /* 代码检查配置 */
+    // 启用所有严格类型检查选项
     "strict": true,
-    "skipLibCheck": true,
+
+    // 检查未使用的局部变量
+    "noUnusedLocals": true,
+
+    // 检查未使用的函数参数
+    "noUnusedParameters": true,
+
+    // 检查 switch 语句中是否缺少 break
+    "noFallthroughCasesInSwitch": true,
+
+    // 强制文件名大小写一致（避免跨平台问题）
     "forceConsistentCasingInFileNames": true,
 
-    // 模块和兼容性相关配置
+    /* 兼容性配置 */
+    // 允许从没有默认导出的模块中默认导入
     "allowSyntheticDefaultImports": true,
-    "esModuleInterop": true,
-    "resolveJsonModule": true,
 
-    // 调试和兼容性相关配置
-    "sourceMap": true,
-    "useDefineForClassFields": true,
+    // ES 模块与 CommonJS 模块互操作
+    "esModuleInterop": true,
+
+    // 允许编译 JavaScript 文件
     "allowJs": true,
 
-    // 类型声明相关配置
-    "types": ["node"]
+    // 生成 source map 文件（用于调试）
+    "sourceMap": true
   },
 
+  // 指定需要编译的文件
   "include": [
-    "types/**/*.d.ts",
-    "mock/**/*.ts",
-    "src/**/*.ts",
-    "src/**/*.vue",
-    "vite.config.ts",
-    "eslint.config.ts",
-    "uno.config.ts"
+    "src/**/*.ts", // 所有 TypeScript 文件
+    "src/**/*.tsx", // 所有 React TypeScript 文件
+    "vite.config.ts" // Vite 配置文件
   ],
+
+  // 排除不需要编译的目录
   "exclude": ["node_modules", "dist"]
 }
