@@ -1,1 +1,1 @@
-// https://cn.vitejs.dev/guide/env-and-mode
+/// <reference types="vite/client" />
