@@ -1,5 +1,6 @@
 import { Panel, Group } from "react-resizable-panels";
 import { Button } from "@/components/ui/button.tsx";
+import { Icon } from "@/components/icon";
 
 function App() {
   return (
@@ -10,21 +11,23 @@ function App() {
           <div className="flex flex-col items-center gap-4">
             {/* --- 画廊展示切换按钮 --- */}
             <Button variant="ghost" size="icon" title="示例画廊">
-              5
+              <Icon icon="mdi:view-gallery-outline" className="text-xl" />
             </Button>
 
             {/* --- 代码查看器切换按钮 --- */}
             <Button variant="ghost" size="icon" title="编辑器">
-              6
+              <Icon icon="mdi:code-braces" className="text-xl" />
             </Button>
           </div>
           <div className="flex flex-col items-center gap-4">
             {/* 主题切换按钮 */}
-            <Button variant="ghost" size="icon" className="h-10 w-10"></Button>
+            <Button variant="ghost" size="icon" className="h-10 w-10">
+              <Icon icon="mdi:theme-light-dark" className="text-xl" />
+            </Button>
 
             {/* 设置按钮 */}
             <Button variant="ghost" size="icon" className="h-10 w-10" title="设置">
-              设置
+              <Icon icon="mdi:cog-outline" className="text-xl" />
             </Button>
           </div>
         </div>
