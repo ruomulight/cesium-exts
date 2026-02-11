@@ -21,7 +21,16 @@ export default defineConfig([
     },
     rules: {
       // react-refresh 规则，允许导出常量
-      "react-refresh/only-export-components": "off"
+      "react-refresh/only-export-components": "off",
+
+      "@typescript-eslint/no-unused-vars": [
+        "error",
+        {
+          argsIgnorePattern: "^_", // ✅ 忽略以 _ 开头的参数
+          varsIgnorePattern: "^_",
+          destructuredArrayIgnorePattern: "^_"
+        }
+      ]
     }
   }
 ]);

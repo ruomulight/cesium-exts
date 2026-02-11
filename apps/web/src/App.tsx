@@ -1,6 +1,7 @@
 import { Panel, Group } from "react-resizable-panels";
 import { Button } from "@/components/ui/button.tsx";
 import { Icon } from "@/components/icon";
+import Bucket from "@/components/Bucket/Bucket.tsx";
 
 function App() {
   return (
@@ -39,7 +40,15 @@ function App() {
         {/* 右侧主面板：包含视图和控制台 */}
         <Panel minSize={200}>
           {/* Cesium 视窗区域 */}
-          <Panel minSize={20}>333</Panel>
+          <Panel minSize={20}>
+            <Bucket
+              code="console.log('Hello Cesium!');"
+              html="<div id='cesiumContainer'></div>"
+              runNumber={1}
+              highlightLine={() => {}}
+              resetConsole={() => {}}
+            />
+          </Panel>
         </Panel>
       </Group>
     </div>
