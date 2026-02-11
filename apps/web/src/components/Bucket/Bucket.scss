@@ -1,9 +1,10 @@
-.bucket-container {
-  height: 100%;
+.fullFrame {
   width: 100%;
-  .fullFrame {
-    border: none;
-    width: 100%;
+  height: 100%;
+  .bucket-container {
     height: 100%;
+    width: 100%;
   }
 }
+
+

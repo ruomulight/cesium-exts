@@ -107,7 +107,7 @@ const Bucket: FC<BucketProps> = ({
   });
 
   return (
-    <Group orientation="vertical">
+    <Group orientation="vertical" className="bucket-container">
       {/* Cesium 视窗区域 */}
       <Panel minSize={20}>
         <iframe
