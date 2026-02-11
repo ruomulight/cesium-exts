@@ -70,10 +70,7 @@ const Sandcastle = {
     if (key !== undefined) {
       const lineNumber = registered.get(key) ?? registered.get(key.primitive);
       if (lineNumber !== undefined) {
-        window.parent.postMessage(
-          { type: "highlight", highlight: lineNumber },
-          "*",
-        );
+        window.parent.postMessage({ type: "highlight", highlight: lineNumber }, "*");
         return;
       }
     }
@@ -107,12 +104,7 @@ const Sandcastle = {
    * @param onchange Callback for when the button is clicked
    * @param toolbarId Element to append this to, defaults to the default toolbar
    */
-  addToggleButton(
-    text: string,
-    checked: boolean,
-    onchange: (newValue: boolean) => void,
-    toolbarId?: string,
-  ) {
+  addToggleButton(text: string, checked: boolean, onchange: (newValue: boolean) => void, toolbarId?: string) {
     Sandcastle.declare(onchange);
 
     const input = document.createElement("input");
@@ -185,11 +177,7 @@ const Sandcastle = {
    * @param onclick Callback for when the button is clicked
    * @param toolbarId Element to append this to, defaults to the default toolbar
    */
-  addDefaultToolbarButton(
-    text: string,
-    onclick: () => void,
-    toolbarId?: string,
-  ) {
+  addDefaultToolbarButton(text: string, onclick: () => void, toolbarId?: string) {
     Sandcastle.addToolbarButton(text, onclick, toolbarId);
     defaultAction = onclick;
   },
@@ -251,7 +239,7 @@ const Sandcastle = {
   addDefaultToolbarMenu(options: SelectOption[], toolbarId?: string) {
     Sandcastle.addToolbarMenu(options, toolbarId);
     defaultAction = options[0].onselect;
-  },
+  }
 };
 
 export default Sandcastle;
