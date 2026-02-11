@@ -5,7 +5,3 @@ export default {
     cesiumInit();
   }
 };
-
-export const useAppInitialization = () => {
-  cesiumInit();
-};
