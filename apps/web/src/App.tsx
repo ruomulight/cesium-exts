@@ -39,16 +39,15 @@ function App() {
 
         {/* 右侧主面板：包含视图和控制台 */}
         <Panel minSize={200}>
-          {/* Cesium 视窗区域 */}
-          <Panel minSize={20}>
-            <Bucket
-              code="console.log('Hello Cesium!');"
-              html="<div id='cesiumContainer'></div>"
-              runNumber={1}
-              highlightLine={() => {}}
-              resetConsole={() => {}}
-            />
-          </Panel>
+          {/* Cesium 视窗区域 - Bucket 内部已包含两个 Panel 和一个 Group */}
+          <Bucket
+            code="console.log('Hello Cesium!');"
+            html="<div id='cesiumContainer'></div>"
+            runNumber={1}
+            highlightLine={() => {}}
+            appendConsole={() => {}}
+            resetConsole={() => {}}
+          />
         </Panel>
       </Group>
     </div>

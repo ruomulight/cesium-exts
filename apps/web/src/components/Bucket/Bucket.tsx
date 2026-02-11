@@ -1,4 +1,7 @@
 import { type FC, memo, useEffect, useRef } from "react";
+import { Panel, Group } from "react-resizable-panels";
+
+import ConsoleMirror, { type ConsoleMessageType } from "@/components/ConsoleMirror/ConsoleMirror.tsx";
 
 import "./Bucket.scss";
 
@@ -27,6 +30,13 @@ interface BucketProps {
    * @param _lineNumber - 要高亮的行号
    */
   highlightLine: (_lineNumber: number) => void;
+
+  /**
+   * 向控制台追加消息的回调函数
+   * @param _type - 消息类型(log/warn/error等)
+   * @param _message - 消息内容
+   */
+  appendConsole: (_type: ConsoleMessageType, _message: string) => void;
 
   /**
    * 重置控制台的回调函数
@@ -81,6 +91,7 @@ const Bucket: FC<BucketProps> = ({
   html: _html,
   runNumber: _runNumber,
   highlightLine: _highlightLine,
+  appendConsole: _appendConsole,
   resetConsole: _resetConsole
 }) => {
   const bucket = useRef<HTMLIFrameElement>(null);
@@ -90,21 +101,29 @@ const Bucket: FC<BucketProps> = ({
     // console.dir(html);
     // console.dir(runNumber);
     // console.dir(highlightLine);
+    // console.dir(appendConsole);
     // console.dir(resetConsole);
     // console.dir(bucket.current);
   });
 
   return (
-    <div className="bucket-container">
-      <iframe
-        ref={bucket}
-        id="bucketFrame"
-        className="fullFrame"
-        src="/templates/bucket.html"
-        allowFullScreen
-        loading="lazy" // 性能优化:懒加载
-      />
-    </div>
+    <Group orientation="vertical">
+      {/* Cesium 视窗区域 */}
+      <Panel minSize={20}>
+        <iframe
+          ref={bucket}
+          id="bucketFrame"
+          className="fullFrame"
+          src="/templates/bucket.html"
+          allowFullScreen
+          loading="lazy" // 性能优化:懒加载
+        />
+      </Panel>
+      {/* 控制台/调试信息区域 */}
+      <Panel minSize={30} defaultSize={100}>
+        <ConsoleMirror />
+      </Panel>
+    </Group>
   );
 };
 
