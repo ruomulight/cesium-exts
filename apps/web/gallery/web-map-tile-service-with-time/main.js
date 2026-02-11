@@ -1,7 +1,7 @@
 import * as Cesium from "cesium";
 
 const viewer = new Cesium.Viewer("cesiumContainer", {
-  shouldAnimate: true,
+  shouldAnimate: true
 });
 
 function dataCallback(interval, index) {
@@ -14,7 +14,7 @@ function dataCallback(interval, index) {
   }
 
   return {
-    Time: time,
+    Time: time
   };
 }
 
@@ -23,7 +23,7 @@ const times = Cesium.TimeIntervalCollection.fromIso8601({
   leadingInterval: true,
   trailingInterval: true,
   isStopIncluded: false, // We want stop time to be part of the trailing interval
-  dataCallback: dataCallback,
+  dataCallback: dataCallback
 });
 
 // Add a WMTS imagery layer.
@@ -38,7 +38,7 @@ const provider = new Cesium.WebMapTileServiceImageryProvider({
   format: "image/jpeg",
   clock: viewer.clock,
   times: times,
-  credit: "NASA Global Imagery Browse Services for EOSDIS",
+  credit: "NASA Global Imagery Browse Services for EOSDIS"
 });
 const layer = new Cesium.ImageryLayer(provider);
 

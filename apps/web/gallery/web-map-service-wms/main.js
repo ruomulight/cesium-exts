@@ -9,13 +9,13 @@ const layer = new Cesium.ImageryLayer(
     layers: "Bores",
     parameters: {
       transparent: true,
-      format: "image/png",
-    },
-  }),
+      format: "image/png"
+    }
+  })
 );
 viewer.imageryLayers.add(layer);
 
 // Start off looking at Australia.
 viewer.camera.setView({
-  destination: Cesium.Rectangle.fromDegrees(114.591, -45.837, 148.97, -5.73),
+  destination: Cesium.Rectangle.fromDegrees(114.591, -45.837, 148.97, -5.73)
 });
