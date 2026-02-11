@@ -13,15 +13,5 @@ interface Props extends IconProps {
  * 通用图标组件
  */
 export function Icon({ icon, className, spin, ...props }: Props) {
-  return (
-    <IconifyIcon
-      icon={icon}
-      className={cn(
-        "inline-block",
-        spin && "animate-spin",
-        className
-      )}
-      {...props}
-    />
-  );
+  return <IconifyIcon icon={icon} className={cn("inline-block", spin && "animate-spin", className)} {...props} />;
 }
