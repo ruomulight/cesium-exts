@@ -18,6 +18,13 @@ export default defineConfig([
     languageOptions: {
       ecmaVersion: 2020,
       globals: globals.browser
+    },
+    rules: {
+      // react-refresh 规则，允许导出常量
+      "react-refresh/only-export-components": [
+        "warn",
+        { allowConstantExport: true }
+      ]
     }
   }
 ]);
