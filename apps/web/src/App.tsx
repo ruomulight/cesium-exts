@@ -11,12 +11,12 @@ function App() {
           <div className="flex flex-col items-center gap-4">
             {/* --- 画廊展示切换按钮 --- */}
             <Button variant="ghost" size="icon" title="示例画廊">
-              <Icon icon="mdi:view-gallery-outline" className="text-xl" />
+              <Icon icon="mdi:file-image-marker" className="text-xl" />
             </Button>
 
             {/* --- 代码查看器切换按钮 --- */}
             <Button variant="ghost" size="icon" title="编辑器">
-              <Icon icon="mdi:code-braces" className="text-xl" />
+              <Icon icon="mdi:application-braces-outline" className="text-xl" />
             </Button>
           </div>
           <div className="flex flex-col items-center gap-4">
@@ -27,7 +27,7 @@ function App() {
 
             {/* 设置按钮 */}
             <Button variant="ghost" size="icon" className="h-10 w-10" title="设置">
-              <Icon icon="mdi:cog-outline" className="text-xl" />
+              <Icon icon="mdi:settings-outline" className="text-xl" />
             </Button>
           </div>
         </div>
