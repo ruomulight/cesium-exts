@@ -5,6 +5,8 @@ import path from "path";
 
 // https://vite.dev/config/
 export default defineConfig({
+  plugins: [react()],
+
   // 配置开发服务器
   server: {
     // 允许通过 IP 地址访问开发服务器
@@ -12,12 +14,13 @@ export default defineConfig({
     // 服务器启动时是否自动打开浏览器
     open: true
   },
+
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src")
     }
   },
-  plugins: [react()],
+
   // 构建配置
   build: {
     // 设置输出目录为项目根目录下的 dist/Sandcastle
