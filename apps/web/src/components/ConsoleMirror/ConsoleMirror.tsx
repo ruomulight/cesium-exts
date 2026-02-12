@@ -9,12 +9,12 @@ export type ConsoleMessage = {
 
 function ConsoleMirror() {
   return (
-    <div className="f">
+    <div>
       <div>
         <span>
           <Icon icon="mdi:chevron-down" className="text-xl" />
         </span>
-        <span>Console</span>
+        <span>控制台</span>
       </div>
       <div>Any console messages will be mirrored here</div>
     </div>
