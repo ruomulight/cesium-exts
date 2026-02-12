@@ -5,7 +5,7 @@ commit_msg=$(cat "$commit_msg_file")
 
 # 定义 Commit 格式的正则
 # type(scope?): message
-conventional_regex="^(feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert|config)(\([a-zA-Z0-9_-]+\))?: .+$"
+conventional_regex="^(feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert|remove|config)(\([a-zA-Z0-9_-]+\))?: .+$"
 
 # 从正则中提取类型列表
 commit_types=$(echo "$conventional_regex" | grep -oP '(?<=\^)\([^)]+\)' | sed 's/[()]//g')
