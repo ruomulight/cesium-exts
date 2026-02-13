@@ -96,6 +96,9 @@ importers:
       shadcn:
         specifier: ^3.8.4
         version: 3.8.4(@types/node@24.10.13)(typescript@5.9.3)
+      terser:
+        specifier: ^5.46.0
+        version: 5.46.0
       tw-animate-css:
         specifier: ^1.4.0
         version: 1.4.0
