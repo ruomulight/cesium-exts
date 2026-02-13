@@ -1,28 +1,28 @@
 {
   "compilerOptions": {
     "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.node.tsbuildinfo",
-    "target": "ES2023",                                   // 目标 ECMAScript 版本
-    "lib": ["ES2023"],                                    // 包含的库文件
-    "module": "ESNext",                                   // 指定生成的模块代码版本
-    "types": ["node"],                                    // 包含 Node.js 类型定义
-    "skipLibCheck": true,                                 // 跳过声明文件的类型检查
+    "target": "ES2023", // 目标 ECMAScript 版本
+    "lib": ["ES2023"], // 包含的库文件
+    "module": "ESNext", // 指定生成的模块代码版本
+    "types": ["node"], // 包含 Node.js 类型定义
+    "skipLibCheck": true, // 跳过声明文件的类型检查
 
     /* 模块解析相关 */
-    "moduleResolution": "bundler",                        // 模块解析策略
-    "allowImportingTsExtensions": true,                   // 允许导入以 .ts 结尾的文件
-    "verbatimModuleSyntax": true,                         // 保持模块语法不被转换
-    "moduleDetection": "force",                           // 强制将文件视为模块
-    "composite": true,                                    // 启用工程拆分
-    "noEmit": false,                                      // 关闭禁止输出
-    "emitDeclarationOnly": true,                          // 仅输出类型声明文件
+    "moduleResolution": "bundler", // 模块解析策略
+    "allowImportingTsExtensions": true, // 允许导入以 .ts 结尾的文件
+    "verbatimModuleSyntax": true, // 保持模块语法不被转换
+    "moduleDetection": "force", // 强制将文件视为模块
+    "composite": true, // 启用工程拆分
+    "noEmit": false, // 关闭禁止输出
+    "emitDeclarationOnly": true, // 仅输出类型声明文件
 
     /* 严格检查相关 */
-    "strict": true,                                       // 启用严格检查
-    "noUnusedLocals": true,                                // 检查未使用的局部变量
-    "noUnusedParameters": true,                            // 检查未使用的参数
-    "erasableSyntaxOnly": true,                           // 仅使用可擦除语法
-    "noFallthroughCasesInSwitch": true,                   // 防止 switch 穿透
-    "noUncheckedSideEffectImports": true                  // 检查无副作用导入
+    "strict": true, // 启用严格检查
+    "noUnusedLocals": true, // 检查未使用的局部变量
+    "noUnusedParameters": true, // 检查未使用的参数
+    "erasableSyntaxOnly": true, // 仅使用可擦除语法
+    "noFallthroughCasesInSwitch": true, // 防止 switch 穿透
+    "noUncheckedSideEffectImports": true // 检查无副作用导入
   },
-  "include": ["vite.config.ts"]                           // 包含 Vite 配置文件
+  "include": ["vite.config.ts"] // 包含 Vite 配置文件
 }
