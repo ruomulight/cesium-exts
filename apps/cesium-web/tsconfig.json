@@ -7,11 +7,4 @@
   },
   "files": [],
   "references": [{ "path": "./tsconfig.app.json" }, { "path": "./tsconfig.node.json" }],
-  // 指定需要编译的文件
-  "include": [
-    "src/**/*.ts", // 所有 TypeScript 文件
-    "src/**/*.tsx", // 所有 React TypeScript 文件
-    "vite.config.ts", // Vite 配置文件
-    "types/**.d.ts"
-  ]
 }
