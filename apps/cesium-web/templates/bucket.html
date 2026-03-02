@@ -12,25 +12,15 @@
       if (window.location.protocol === "file:") {
         if (
           // eslint-disable-next-line no-alert
-          window.confirm(
-            "You must host this app on a web server.\nSee contributor's guide for more info?",
-          )
+          window.confirm("You must host this app on a web server.\nSee contributor's guide for more info?")
         ) {
           window.location =
             "https://github.com/CesiumGS/cesium/blob/main/Documentation/Contributors/BuildGuide/README.md#quickstart";
         }
       }
     </script>
-    <link
-      rel="stylesheet"
-      href="__CESIUM_BASE_URL__/Widgets/widgets.css"
-      vite-ignore
-    />
-    <link
-      rel="stylesheet"
-      href="__CESIUM_BASE_URL__/Widgets/lighter.css"
-      vite-ignore
-    />
+    <link rel="stylesheet" href="__CESIUM_BASE_URL__/Widgets/widgets.css" vite-ignore />
+    <link rel="stylesheet" href="__CESIUM_BASE_URL__/Widgets/lighter.css" vite-ignore />
     <style>
       /*
       * Minimal styles copied from the bucket.css stylesheet to avoid FOUC and reflow
@@ -65,11 +55,7 @@
           transparent 3px,
           transparent 25px
         );
-        --_gradient: linear-gradient(
-          180deg,
-          var(--bg-lighter) 0%,
-          var(--bg-dark) 100%
-        );
+        --_gradient: linear-gradient(180deg, var(--bg-lighter) 0%, var(--bg-dark) 100%);
 
         background-image: var(--_rings), var(--_gradient);
       }
@@ -107,10 +93,6 @@
     </script>
   </head>
   <body class="sandcastle-loading">
-    <script
-      type="text/javascript"
-      src="../Sandcastle-client.js"
-      vite-ignore
-    ></script>
+    <script type="text/javascript" src="../Sandcastle-client.js" vite-ignore></script>
   </body>
 </html>
