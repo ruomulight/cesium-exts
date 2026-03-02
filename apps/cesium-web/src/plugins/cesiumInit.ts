@@ -51,3 +51,21 @@ export function cesiumInit() {
   // 确保在生产环境中也能看到 Cesium 初始化的路径信息，方便排查资源 404 问题
   window.console.log(`[Cesium Init] 模式: ${import.meta.env.MODE}, 资源路径 BaseURL: ${window.CESIUM_BASE_URL}`);
 }
+
+/**
+ * 应用初始化 Hook
+ * ------------------------------------------------------------------
+ * 作用：封装所有应用启动时需要执行的初始化逻辑。
+ *
+ * 使用示例 (在应用的 main.ts 或 App.vue 中调用):
+ *
+ * ```typescript
+ * import { useAppInitialization } from "@/plugins/cesiumInit";
+ *
+ * // 执行初始化
+ * useAppInitialization();
+ * ```
+ */
+export const useAppInitialization = () => {
+  cesiumInit();
+};
