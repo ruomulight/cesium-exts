@@ -2,6 +2,8 @@ import * as Cesium from "cesium";
 
 import pkg from "package.json";
 
+console.log(5);
+
 /**
  * 获取并返回当前 Cesium 库的版本号字符串
  *
