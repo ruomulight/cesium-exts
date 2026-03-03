@@ -1,6 +1,5 @@
 #!/bin/sh
 . "$(dirname "$0")/_/husky.sh"
 
-echo "🔍 运行提交前检查..."
-pnpm run lint
-pnpm run format
+echo "🔍 运行 lint-staged..."
+pnpm exec lint-staged
