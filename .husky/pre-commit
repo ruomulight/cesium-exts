@@ -2,8 +2,5 @@
 . "$(dirname "$0")/_/husky.sh"
 
 echo "🔍 运行提交前检查..."
-
-pnpm run lint || { echo "❌ lint 未通过，提交已中止"; exit 1; }
-pnpm run format || { echo "❌ format 未通过，提交已中止"; exit 1; }
-
-echo "✅ 检查通过，正在提交..."
+pnpm run lint
+pnpm run format
