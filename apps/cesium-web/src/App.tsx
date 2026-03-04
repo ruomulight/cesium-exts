@@ -35,48 +35,35 @@ function App() {
           </div>
         </div>
 
-        <Panel defaultSize={600} minSize={200}>
-          <Tabs defaultValue="overview" className="w-full">
-            <TabsList variant="line">
+        <Panel defaultSize={600} minSize={200} className="flex flex-col !m-[5px]">
+          <Tabs defaultValue="overview" className="w-full h-full flex flex-col">
+            <TabsList variant="line" className="flex-shrink-0">
               <TabsTrigger value="overview">Javascript</TabsTrigger>
               <TabsTrigger value="analytics">HTML/CSS</TabsTrigger>
             </TabsList>
-            <TabsContent value="overview">
-              <Card>
+            <TabsContent value="overview" className="flex-1 mt-0">
+              <Card className="h-full flex flex-col">
                 <CardHeader>
                   <CardTitle>Overview</CardTitle>
                   <CardDescription>
                     View your key metrics and recent project activity. Track progress across all your active projects.
                   </CardDescription>
                 </CardHeader>
-                <CardContent className="text-muted-foreground text-sm">
+                <CardContent className="text-muted-foreground text-sm flex-1">
                   You have 12 active projects and 3 pending tasks.
                 </CardContent>
               </Card>
             </TabsContent>
-            <TabsContent value="analytics">
-              <Card>
+            <TabsContent value="analytics" className="flex-1 mt-0">
+              <Card className="h-full flex flex-col">
                 <CardHeader>
                   <CardTitle>Analytics</CardTitle>
                   <CardDescription>
                     Track performance and user engagement metrics. Monitor trends and identify growth opportunities.
                   </CardDescription>
                 </CardHeader>
-                <CardContent className="text-muted-foreground text-sm">
+                <CardContent className="text-muted-foreground text-sm flex-1">
                   Page views are up 25% compared to last month.
-                </CardContent>
-              </Card>
-            </TabsContent>
-            <TabsContent value="reports">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Reports</CardTitle>
-                  <CardDescription>
-                    Generate and download your detailed reports. Export data in multiple formats for analysis.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="text-muted-foreground text-sm">
-                  You have 5 reports ready and available to export.
                 </CardContent>
               </Card>
             </TabsContent>
