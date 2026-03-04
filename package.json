@@ -4,6 +4,7 @@
   "type": "module",
   "scripts": {
     "dev": "turbo run dev",
+    "dev:cesium-web": "turbo run dev --filter=cesium-web",
     "build": "turbo run build",
     "lint": "turbo run lint",
     "format": "prettier --write \"**/*.{js,ts,mjs,cjs,json,tsx,css,less,scss,vue,html,md}\"",
