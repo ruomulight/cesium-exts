@@ -1,12 +1,17 @@
+import { useState } from "react";
 import { Panel, Group } from "react-resizable-panels";
 
 import { Button } from "@/components/ui/button.tsx";
 import { Icon } from "@/components/icon";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import Bucket from "@/components/Bucket/Bucket.tsx";
 import SandcastleEditor from "@/components/SandcastleEditor/SandcastleEditor";
+import { useCodeState } from "@/hooks/useCodeState";
 
 function App() {
+  const [codeState, dispatch] = useCodeState();
+  const [activeTab, setActiveTab] = useState("javascript");
+
   return (
     <div className="h-screen w-screen">
       <Group orientation="horizontal">
@@ -37,21 +42,24 @@ function App() {
         </div>
 
         <Panel defaultSize={600} minSize={200} className="flex flex-col !m-[5px]">
-          <Tabs defaultValue="overview" className="w-full h-full flex flex-col">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full h-full flex flex-col">
             <TabsList variant="line" className="flex-shrink-0">
-              <TabsTrigger value="overview">Javascript</TabsTrigger>
-              <TabsTrigger value="analytics">HTML/CSS</TabsTrigger>
+              <TabsTrigger value="javascript">Javascript</TabsTrigger>
+              <TabsTrigger value="html">HTML/CSS</TabsTrigger>
             </TabsList>
-            <TabsContent value="overview" className="flex-1 mt-0">
+            <div className="flex-1 mt-0">
               <div className="h-full flex flex-col">
-                <SandcastleEditor language="javascript" />
+                <SandcastleEditor
+                  language={activeTab}
+                  value={activeTab === "javascript" ? codeState.code : codeState.html}
+                  onChange={val => {
+                    dispatch(
+                      activeTab === "javascript" ? { type: "setCode", code: val } : { type: "setHtml", html: val }
+                    );
+                  }}
+                />
               </div>
-            </TabsContent>
-            <TabsContent value="analytics" className="flex-1 mt-0">
-              <div className="h-full flex flex-col">
-                <SandcastleEditor language="html" />
-              </div>
-            </TabsContent>
+            </div>
           </Tabs>
         </Panel>
 
@@ -59,9 +67,9 @@ function App() {
         <Panel minSize={200}>
           {/* Cesium 视窗区域 - Bucket 内部已包含两个 Panel 和一个 Group */}
           <Bucket
-            code="console.log('Hello Cesium!');"
-            html="<div id='cesiumContainer'></div>"
-            runNumber={1}
+            code={codeState.committedCode}
+            html={codeState.committedHtml}
+            runNumber={codeState.runNumber}
             highlightLine={() => {}}
             appendConsole={() => {}}
             resetConsole={() => {}}

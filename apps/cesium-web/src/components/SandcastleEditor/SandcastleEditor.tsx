@@ -1,19 +1,23 @@
 import { Editor, type EditorProps } from "@monaco-editor/react";
-import { memo, useState } from "react";
+import { memo } from "react";
 
 /**
  * SandcastleEditor 组件的属性接口
  */
 interface SandcastleEditorProps {
   /**
-   * 初始代码内容
+   * 当前代码内容
    */
-  initialValue?: string;
+  value?: string;
   /**
    * 编程语言
    * @default "javascript"
    */
   language?: string;
+  /**
+   * 编辑内容发生变化时的回调
+   */
+  onChange?: (value: string) => void;
 }
 
 /**
@@ -36,16 +40,13 @@ const DEFAULT_EDITOR_OPTIONS: EditorProps["options"] = {
  * Sandcastle 代码编辑器组件
  * 提供代码编辑功能，基于 Monaco Editor 封装
  */
-const SandcastleEditor = ({ initialValue = "", language = "javascript" }: SandcastleEditorProps) => {
-  // 当前编辑器中的代码内容
-  const [editorValue, setEditorValue] = useState(initialValue);
-
+const SandcastleEditor = ({ value = "", language = "javascript", onChange }: SandcastleEditorProps) => {
   /**
    * 处理编辑器内容变化
-   * @param value - 变化后的代码内容
+   * @param val - 变化后的代码内容
    */
-  const handleEditorChange = (value: string | undefined) => {
-    setEditorValue(value ?? "");
+  const handleEditorChange = (val: string | undefined) => {
+    onChange?.(val ?? "");
   };
 
   return (
@@ -54,8 +55,8 @@ const SandcastleEditor = ({ initialValue = "", language = "javascript" }: Sandca
       <div className="flex-1 overflow-hidden">
         <Editor
           theme="dark"
-          defaultLanguage={language}
-          value={editorValue}
+          language={language}
+          value={value}
           onChange={handleEditorChange}
           options={DEFAULT_EDITOR_OPTIONS}
         />
