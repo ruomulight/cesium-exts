@@ -1,9 +1,10 @@
 import { Panel, Group } from "react-resizable-panels";
+
 import { Button } from "@/components/ui/button.tsx";
 import { Icon } from "@/components/icon";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import Bucket from "@/components/Bucket/Bucket.tsx";
+import SandcastleEditor from "@/components/SandcastleEditor/SandcastleEditor";
 
 function App() {
   return (
@@ -42,30 +43,14 @@ function App() {
               <TabsTrigger value="analytics">HTML/CSS</TabsTrigger>
             </TabsList>
             <TabsContent value="overview" className="flex-1 mt-0">
-              <Card className="h-full flex flex-col">
-                <CardHeader>
-                  <CardTitle>Overview</CardTitle>
-                  <CardDescription>
-                    View your key metrics and recent project activity. Track progress across all your active projects.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="text-muted-foreground text-sm flex-1">
-                  You have 12 active projects and 3 pending tasks.
-                </CardContent>
-              </Card>
+              <div className="h-full flex flex-col">
+                <SandcastleEditor></SandcastleEditor>
+              </div>
             </TabsContent>
             <TabsContent value="analytics" className="flex-1 mt-0">
-              <Card className="h-full flex flex-col">
-                <CardHeader>
-                  <CardTitle>Analytics</CardTitle>
-                  <CardDescription>
-                    Track performance and user engagement metrics. Monitor trends and identify growth opportunities.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="text-muted-foreground text-sm flex-1">
-                  Page views are up 25% compared to last month.
-                </CardContent>
-              </Card>
+              <div className="h-full flex flex-col">
+                <SandcastleEditor></SandcastleEditor>
+              </div>
             </TabsContent>
           </Tabs>
         </Panel>
