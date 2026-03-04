@@ -1,4 +1,4 @@
-import { type FC, memo, useEffect, useRef } from "react";
+import { memo, useEffect, useRef } from "react";
 import { Panel, Group } from "react-resizable-panels";
 
 import ConsoleMirror, { type ConsoleMessageType } from "@/components/ConsoleMirror/ConsoleMirror.tsx";
@@ -29,19 +29,19 @@ interface BucketProps {
    * 高亮指定行号的回调函数
    * @param _lineNumber - 要高亮的行号
    */
-  highlightLine: (_lineNumber: number) => void;
+  highlightLine: (lineNumber: number) => void;
 
   /**
    * 向控制台追加消息的回调函数
    * @param _type - 消息类型(log/warn/error等)
    * @param _message - 消息内容
    */
-  appendConsole: (_type: ConsoleMessageType, _message: string) => void;
+  appendConsole: (type: ConsoleMessageType, message: string) => void;
 
   /**
    * 重置控制台的回调函数
    */
-  resetConsole: () => void;
+  resetConsole: (options?: { showMessage?: boolean }) => void;
 }
 
 /**
@@ -86,24 +86,28 @@ interface BucketProps {
  * />
  * ```
  */
-const Bucket: FC<BucketProps> = ({
-  code: _code,
-  html: _html,
-  runNumber: _runNumber,
-  highlightLine: _highlightLine,
-  appendConsole: _appendConsole,
-  resetConsole: _resetConsole
-}) => {
+function Bucket({ code, html, runNumber, highlightLine, appendConsole, resetConsole }: BucketProps) {
   const bucket = useRef<HTMLIFrameElement>(null);
+  const lastRunNumber = useRef<number>(Number.NEGATIVE_INFINITY);
 
   useEffect(() => {
-    // console.dir(code);
-    // console.dir(html);
-    // console.dir(runNumber);
-    // console.dir(highlightLine);
-    // console.dir(appendConsole);
-    // console.dir(resetConsole);
-    // console.dir(bucket.current);
+    if (runNumber !== lastRunNumber.current && bucket.current && bucket.current.contentWindow) {
+      // When we want to run sandcastle code we just need to reload the bucket
+      // it sends a message when loaded which triggers the message handler below
+      // to load the actual code
+      bucket.current.contentWindow.location.reload();
+    }
+    lastRunNumber.current = runNumber;
+  }, [code, html, runNumber]);
+
+  useEffect(() => {
+    console.dir(code);
+    console.dir(html);
+    console.dir(runNumber);
+    console.dir(highlightLine);
+    console.dir(appendConsole);
+    console.dir(resetConsole);
+    console.dir(bucket.current);
   });
 
   return (
@@ -125,7 +129,7 @@ const Bucket: FC<BucketProps> = ({
       </Panel>
     </Group>
   );
-};
+}
 
 /**
  * 使用 memo 包裹的 Bucket 组件

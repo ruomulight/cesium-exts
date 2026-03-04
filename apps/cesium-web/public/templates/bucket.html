@@ -19,10 +19,12 @@
         }
       }
     </script>
+    <link rel="stylesheet" href="CESIUM_BASE_URL/Widgets/widgets.css" vite-ignore />
+    <link rel="stylesheet" href="CESIUM_BASE_URL/Widgets/lighter.css" vite-ignore />
     <style>
       /*
-      * Minimal styles copied from the bucket.css stylesheet to avoid FOUC and reflow
-      */
+        * Minimal styles copied from the bucket.css stylesheet to avoid FOUC and reflow
+        */
       html {
         height: 100%;
       }
@@ -85,8 +87,17 @@
         display: none;
       }
     </style>
+    <!--    <script type="module">-->
+    <!--      import { unstable_loadStyles } from "@stratakit/foundations";-->
+
+    <!--      unstable_loadStyles(document);-->
+    <!--    </script>-->
+    <!--    <link rel="stylesheet" href="/styles/stratakit-mimic/styles.css" />-->
     <script>
       window.CESIUM_BASE_URL = "__CESIUM_BASE_URL__";
     </script>
   </head>
+  <!--  <body class="sandcastle-loading">-->
+  <!--    <script src="../src/util/bucket-client.js" type="module"></script>-->
+  <!--  </body>-->
 </html>
