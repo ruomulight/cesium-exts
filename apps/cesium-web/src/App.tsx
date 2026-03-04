@@ -44,12 +44,12 @@ function App() {
             </TabsList>
             <TabsContent value="overview" className="flex-1 mt-0">
               <div className="h-full flex flex-col">
-                <SandcastleEditor></SandcastleEditor>
+                <SandcastleEditor language="javascript" />
               </div>
             </TabsContent>
             <TabsContent value="analytics" className="flex-1 mt-0">
               <div className="h-full flex flex-col">
-                <SandcastleEditor></SandcastleEditor>
+                <SandcastleEditor language="html" />
               </div>
             </TabsContent>
           </Tabs>
