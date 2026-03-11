@@ -16,7 +16,7 @@ function App() {
     <div className="h-screen w-screen">
       <Group orientation="horizontal">
         {/* 左侧侧边栏按钮区域 */}
-        <div className="flex w-[3rem] flex-col justify-between py-4 border-r bg-background !m-[5px]">
+        <div className="flex w-12 flex-col justify-between py-4 border-r bg-background !m-[5px]">
           <div className="flex flex-col items-center gap-4">
             {/* --- 画廊展示切换按钮 --- */}
             <Button variant="ghost" size="icon" title="示例画廊">
@@ -41,9 +41,9 @@ function App() {
           </div>
         </div>
 
-        <Panel defaultSize={600} minSize={200} className="flex flex-col !m-[5px]">
+        <Panel defaultSize={600} minSize={200} className="flex flex-col m-1.25!">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full h-full flex flex-col">
-            <TabsList variant="line" className="flex-shrink-0">
+            <TabsList variant="line" className="shrink-0">
               <TabsTrigger value="javascript">Javascript</TabsTrigger>
               <TabsTrigger value="html">HTML/CSS</TabsTrigger>
             </TabsList>
