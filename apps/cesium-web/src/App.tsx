@@ -16,7 +16,7 @@ function App() {
     <div className="h-screen w-screen">
       <Group orientation="horizontal">
         {/* 左侧侧边栏按钮区域 */}
-        <div className="flex w-12 flex-col justify-between py-4 border-r bg-background !m-[5px]">
+        <div className="flex w-12 flex-col justify-between py-4 border-r bg-background m-1.25!">
           <div className="flex flex-col items-center gap-4">
             {/* --- 画廊展示切换按钮 --- */}
             <Button variant="ghost" size="icon" title="示例画廊">
