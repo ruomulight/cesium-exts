@@ -1,9 +1,12 @@
-import { memo, useEffect, useRef } from "react";
+import { memo, useEffect, useRef, useState } from "react";
 import { Panel, Group } from "react-resizable-panels";
 
 import ConsoleMirror, { type ConsoleMessageType } from "@/components/ConsoleMirror/ConsoleMirror.tsx";
 
 import "./Bucket.scss";
+import { IframeBridge, type BridgeToBucket } from "./util/IframeBridge";
+
+const INNER_ORIGIN = "__INNER_ORIGIN__";
 
 /**
  * Bucket 组件的属性接口
@@ -87,35 +90,89 @@ interface BucketProps {
  * ```
  */
 function Bucket({ code, html, runNumber, highlightLine, appendConsole, resetConsole }: BucketProps) {
-  const bucket = useRef<HTMLIFrameElement>(null);
+  const iframeBridge = useRef<BridgeToBucket>(null);
   const lastRunNumber = useRef<number>(Number.NEGATIVE_INFINITY);
 
+  const [bucketReady, setBucketReady] = useState(false);
+
   useEffect(() => {
-    if (runNumber !== lastRunNumber.current && bucket.current && bucket.current.contentWindow) {
+    if (bucketReady && runNumber !== lastRunNumber.current && iframeBridge.current) {
       // When we want to run sandcastle code we just need to reload the bucket
       // it sends a message when loaded which triggers the message handler below
       // to load the actual code
-      bucket.current.contentWindow.location.reload();
+      iframeBridge.current.sendMessage({
+        type: "reload"
+      });
     }
     lastRunNumber.current = runNumber;
-  }, [code, html, runNumber]);
+  }, [bucketReady, code, html, runNumber]);
 
   useEffect(() => {
-    console.dir(code);
-    console.dir(html);
-    console.dir(runNumber);
-    console.dir(highlightLine);
-    console.dir(appendConsole);
-    console.dir(resetConsole);
-    console.dir(bucket.current);
-  });
+    const messageHandler = function (message: MessageToApp) {
+      if (!iframeBridge.current) {
+        return;
+      }
+
+      if (message.type === "bucketReady") {
+        // The iframe (bucket.html) sends this message on load.
+        // We send the code in response to make sure the page is ready to receive it
+        setBucketReady(true);
+        // Firefox line numbers are zero-based, not one-based.
+        const isFirefox = navigator.userAgent.indexOf("Firefox/") >= 0;
+
+        resetConsole();
+        iframeBridge.current.sendMessage({
+          type: "runCode",
+          code: embedInSandcastleTemplate(code, isFirefox),
+          html
+        });
+      } else if (message.type === "consoleClear") {
+        resetConsole({ showMessage: true });
+      } else if (message.type === "consoleLog") {
+        // Console log messages from the iframe display in Sandcastle.
+        appendConsole("log", message.log);
+      } else if (message.type === "consoleError") {
+        // Console error messages from the iframe display in Sandcastle
+        let errorMsg = message.error;
+        const lineNumber = message.lineNumber;
+        if (lineNumber) {
+          errorMsg += ` (on line ${lineNumber}`;
+
+          if (message.url) {
+            errorMsg += ` of ${message.url}`;
+          }
+          errorMsg += ")";
+        }
+        appendConsole("error", errorMsg);
+      } else if (message.type === "consoleWarn") {
+        // Console warning messages from the iframe display in Sandcastle.
+        appendConsole("warn", message.warn);
+      } else if (message.type === "highlight") {
+        // Hovering objects in the embedded Cesium window.
+        highlightLine(message.highlight);
+      }
+    };
+
+    if (!iframeBridge.current) {
+      return;
+    }
+    iframeBridge.current.addEventListener(messageHandler);
+    return () => iframeBridge.current?.removeEventListener();
+  }, [code, html, highlightLine, resetConsole, appendConsole]);
 
   return (
     <Group orientation="vertical" className="bucket-container">
       {/* Cesium 视窗区域 */}
       <Panel minSize={20}>
         <iframe
-          ref={bucket}
+          ref={iframe => {
+            if (
+              iframe?.contentWindow &&
+              (!iframeBridge.current || iframeBridge.current.targetWindow !== iframe.contentWindow)
+            ) {
+              iframeBridge.current = new IframeBridge(INNER_ORIGIN, iframe.contentWindow);
+            }
+          }}
           id="bucketFrame"
           className="fullFrame"
           src="/templates/bucket.html"
