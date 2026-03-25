@@ -11,6 +11,7 @@ import { useCodeState } from "@/hooks/useCodeState";
 function App() {
   const [codeState, dispatch] = useCodeState();
   const [activeTab, setActiveTab] = useState("javascript");
+  const [activeView, setActiveView] = useState<"editor" | "gallery">("gallery");
 
   return (
     <div className="h-screen w-screen">
@@ -19,12 +20,22 @@ function App() {
         <div className="flex w-12 flex-col justify-between py-4 border-r bg-background m-1.25!">
           <div className="flex flex-col items-center gap-4">
             {/* --- 画廊展示切换按钮 --- */}
-            <Button variant="ghost" size="icon" title="示例画廊">
+            <Button
+              variant={activeView === "gallery" ? "secondary" : "ghost"}
+              size="icon"
+              title="示例画廊"
+              onClick={() => setActiveView("gallery")}
+            >
               <Icon icon="mdi:file-image-marker" className="text-xl" />
             </Button>
 
             {/* --- 代码查看器切换按钮 --- */}
-            <Button variant="ghost" size="icon" title="编辑器">
+            <Button
+              variant={activeView === "editor" ? "secondary" : "ghost"}
+              size="icon"
+              title="编辑器"
+              onClick={() => setActiveView("editor")}
+            >
               <Icon icon="mdi:application-braces-outline" className="text-xl" />
             </Button>
           </div>
@@ -42,25 +53,34 @@ function App() {
         </div>
 
         <Panel defaultSize={600} minSize={200} className="flex flex-col m-1.25!">
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full h-full flex flex-col">
-            <TabsList variant="line" className="shrink-0">
-              <TabsTrigger value="javascript">Javascript</TabsTrigger>
-              <TabsTrigger value="html">HTML/CSS</TabsTrigger>
-            </TabsList>
-            <div className="flex-1 mt-0">
-              <div className="h-full flex flex-col">
-                <SandcastleEditor
-                  language={activeTab}
-                  value={activeTab === "javascript" ? codeState.code : codeState.html}
-                  onChange={val => {
-                    dispatch(
-                      activeTab === "javascript" ? { type: "setCode", code: val } : { type: "setHtml", html: val }
-                    );
-                  }}
-                />
+          {activeView === "editor" ? (
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full h-full flex flex-col">
+              <TabsList variant="line" className="shrink-0">
+                <TabsTrigger value="javascript">Javascript</TabsTrigger>
+                <TabsTrigger value="html">HTML/CSS</TabsTrigger>
+              </TabsList>
+              <div className="flex-1 mt-0">
+                <div className="h-full flex flex-col">
+                  <SandcastleEditor
+                    language={activeTab}
+                    value={activeTab === "javascript" ? codeState.code : codeState.html}
+                    onChange={val => {
+                      dispatch(
+                        activeTab === "javascript" ? { type: "setCode", code: val } : { type: "setHtml", html: val }
+                      );
+                    }}
+                  />
+                </div>
+              </div>
+            </Tabs>
+          ) : (
+            <div className="flex items-center justify-center h-full bg-muted/30 text-muted-foreground border rounded-lg">
+              <div className="flex flex-col items-center gap-2">
+                <Icon icon="mdi:view-grid-plus-outline" className="text-4xl opacity-50" />
+                <p>画廊视图正在开发中...</p>
               </div>
             </div>
-          </Tabs>
+          )}
         </Panel>
 
         {/* 右侧主面板：包含视图和控制台 */}
