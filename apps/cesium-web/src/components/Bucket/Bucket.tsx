@@ -98,9 +98,9 @@ function Bucket({ code, html, runNumber, highlightLine, appendConsole, resetCons
 
   useEffect(() => {
     if (bucketReady && runNumber !== lastRunNumber.current && iframeBridge.current) {
-      // When we want to run sandcastle code we just need to reload the bucket
-      // it sends a message when loaded which triggers the message handler below
-      // to load the actual code
+      // 当需要运行 Sandcastle 代码时，只需重新加载 bucket。
+      // 加载完成后它会发送一条消息，触发下方的消息处理器
+      // 来加载实际代码。
       iframeBridge.current.sendMessage({
         type: "reload"
       });
@@ -115,10 +115,10 @@ function Bucket({ code, html, runNumber, highlightLine, appendConsole, resetCons
       }
 
       if (message.type === "bucketReady") {
-        // The iframe (bucket.html) sends this message on load.
-        // We send the code in response to make sure the page is ready to receive it
+        // iframe (bucket.html) 在加载时会发送此消息。
+        // 我们通过发送代码作为响应，以确保页面已准备好接收。
         setBucketReady(true);
-        // Firefox line numbers are zero-based, not one-based.
+        // Firefox 的行号是从零开始的，而不是从一开始的。
         const isFirefox = navigator.userAgent.indexOf("Firefox/") >= 0;
 
         resetConsole();
@@ -130,26 +130,26 @@ function Bucket({ code, html, runNumber, highlightLine, appendConsole, resetCons
       } else if (message.type === "consoleClear") {
         resetConsole({ showMessage: true });
       } else if (message.type === "consoleLog") {
-        // Console log messages from the iframe display in Sandcastle.
+        // 来自 iframe 的控制台日志消息显示在 Sandcastle 中。
         appendConsole("log", message.log);
       } else if (message.type === "consoleError") {
-        // Console error messages from the iframe display in Sandcastle
+        // 来自 iframe 的控制台错误消息显示在 Sandcastle 中。
         let errorMsg = message.error;
         const lineNumber = message.lineNumber;
         if (lineNumber) {
-          errorMsg += ` (on line ${lineNumber}`;
+          errorMsg += ` (在第 ${lineNumber} 行`;
 
           if (message.url) {
-            errorMsg += ` of ${message.url}`;
+            errorMsg += `，属于 ${message.url}`;
           }
           errorMsg += ")";
         }
         appendConsole("error", errorMsg);
       } else if (message.type === "consoleWarn") {
-        // Console warning messages from the iframe display in Sandcastle.
+        // 来自 iframe 的控制台警告消息显示在 Sandcastle 中。
         appendConsole("warn", message.warn);
       } else if (message.type === "highlight") {
-        // Hovering objects in the embedded Cesium window.
+        // 在嵌入的 Cesium 窗口中悬停对象。
         highlightLine(message.highlight);
       }
     };
