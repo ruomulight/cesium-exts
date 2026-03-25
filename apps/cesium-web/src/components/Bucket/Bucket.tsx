@@ -4,8 +4,8 @@ import { Panel, Group } from "react-resizable-panels";
 import ConsoleMirror, { type ConsoleMessageType } from "@/components/ConsoleMirror/ConsoleMirror.tsx";
 
 import "./Bucket.scss";
-import { IframeBridge, type BridgeToBucket, type MessageToApp } from "./util/IframeBridge";
-import { embedInSandcastleTemplate } from "./util/Helpers";
+import { IframeBridge, type BridgeToBucket, type MessageToApp } from "@/util/IframeBridge";
+import { embedInSandcastleTemplate } from "@/util/Helpers";
 
 const INNER_ORIGIN = "__INNER_ORIGIN__";
 

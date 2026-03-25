@@ -1,69 +1,107 @@
 import { type ConsoleMessage } from "./ConsoleWrapper";
 
 /**
- * 如果没有明确指定，默认用于为 Bridge（桥接）消息提供基础结构的泛型类型。
+ * 桥接消息的默认泛型结构。
+ * 当未指定具体消息类型时，所有消息至少需要包含一个 `type` 字符串字段。
  */
 type MessageWithType = {
   type: string;
 } & Record<string, unknown>;
 
 /**
- * 发送给主应用（App）的消息类型定义
+ * 从 bucket（iframe）发往 app（父窗口）的消息类型。
+ *
+ * | 类型             | 说明                              |
+ * |-----------------|-----------------------------------|
+ * | `bucketReady`   | bucket 初始化完成的通知            |
+ * | `ConsoleMessage`| 将 bucket 内的控制台输出转发给父窗口 |
+ * | `highlight`     | 请求父窗口高亮指定行号              |
  */
 export type MessageToApp = { type: "bucketReady" } | ConsoleMessage | { type: "highlight"; highlight: number };
 
 /**
- * 发送给沙箱/容器（Bucket）的消息类型定义
+ * 从 app（父窗口）发往 bucket（iframe）的消息类型。
+ *
+ * | 类型       | 说明                          |
+ * |-----------|-------------------------------|
+ * | `reload`  | 指示 bucket 重新加载自身         |
+ * | `runCode` | 指示 bucket 执行给定的代码与 HTML |
  */
 export type MessageToBucket = { type: "reload" } | { type: "runCode"; code: string; html: string };
 
-/**
- * App 端的 iframe 消息桥接器类型（向 Bucket 发送，从 Bucket 接收）
- */
+/** 便捷类型别名：在 app（父窗口）侧使用的桥接实例类型。 */
 export type BridgeToApp = IframeBridge<MessageToApp, MessageToBucket>;
 
-/**
- * Bucket 端的 iframe 消息桥接器类型（向 App 发送，从 App 接收）
- */
+/** 便捷类型别名：在 bucket（iframe）侧使用的桥接实例类型。 */
 export type BridgeToBucket = IframeBridge<MessageToBucket, MessageToApp>;
 
 /**
- * 消息包装器类型，用于在跨域通信时通过特定的 id ("sandcastle-bridge") 来标识我们的内部消息
- * @template T 实际携带的消息负载类型
+ * 所有跨帧消息的内部信封结构。
+ *
+ * 通过固定的 `id` 字段将本桥接的消息与第三方库（如 React DevTools、
+ * Monaco Editor）产生的 `postMessage` 流量区分开来。
+ *
+ * @template T - 业务层消息载荷的类型。
  */
 type MessageAugment<T> = { id: "sandcastle-bridge"; message: T };
 
 /**
- * 自定义类型保护函数，用于判断 MessageEvent 是否包含我们预期的消息结构
+ * 类型守卫：检查原始 `MessageEvent` 是否符合本桥接使用的 `MessageAugment` 信封结构。
  *
- * @template T 预期的消息类型
- * @param {MessageEvent} event - 收到的 postMessage 事件
- * @returns {boolean} 如果是已知的消息结构则返回 true
+ * @template T   - 期望的业务层消息载荷类型。
+ * @param event  - 待检查的原始 DOM `MessageEvent`。
+ * @returns 若 `event.data` 符合 `MessageAugment<T>` 结构则返回 `true`，
+ *          同时将事件类型收窄为 `MessageEvent<MessageAugment<T>>`。
  */
 function isKnownMessageStructure<T>(event: MessageEvent): event is MessageEvent<MessageAugment<T>> {
   return event.data?.id === "sandcastle-bridge" && event.data?.message;
 }
 
 /**
- * Iframe 消息通信桥接类
- * 用于在不同的 Window（例如父窗口与 iframe 之间）进行安全的 postMessage 通信。
+ * 父窗口与 iframe 之间具备类型安全与来源校验的 `postMessage` 桥接工具。
  *
- * @template SendMessageType 允许发送的消息类型
- * @template RecieveMessageType 允许接收的消息类型
+ * 通信双方各自实例化一个 `IframeBridge`，并将 `targetWindow` 指向**对方**窗口。
+ * 两个泛型参数由 TypeScript 在编译期约束合法的消息方向：
+ *
+ * ```
+ * 父窗口  ──[MessageToApp]──▶  IframeBridge<MessageToApp,  MessageToBucket>
+ *         ◀─[MessageToBucket]──
+ *
+ * iframe  ──[MessageToBucket]▶  IframeBridge<MessageToBucket, MessageToApp>
+ *         ◀─[MessageToApp]────
+ * ```
+ *
+ * @template SendMessageType    - 本桥接**发送**的消息类型，默认为 `MessageWithType`。
+ * @template RecieveMessageType - 本桥接**接收**的消息类型，默认为 `MessageWithType`。
+ *                                （注：原参数名拼写为 `Recieve`，保持不变以兼容现有接口。）
  */
-// 修复了原代码缺少 '<' 的语法错误
 export class IframeBridge<SendMessageType = MessageWithType, RecieveMessageType = MessageWithType> {
-  /** 允许通信的远程窗口的源（Origin），用于安全校验 */
+  /**
+   * 远端窗口的预期来源（origin）。
+   * 同时用于 `postMessage` 的目标限定和接收消息时的来源校验。
+   */
   remoteOrigin: string;
-  /** 通信的目标窗口对象 */
+
+  /**
+   * 消息发送的目标 `Window` 对象。
+   * 父窗口侧通常为 `iframe.contentWindow`，iframe 侧通常为 `window.parent`。
+   */
   targetWindow: Window;
-  /** 内部保存的窗口 message 事件监听器引用，方便后续移除 */
+
+  /**
+   * 注册到 `window` 上的原始 `message` 事件监听函数。
+   * 保存引用以便 {@link removeEventListener} 能够精确移除。
+   */
   #windowListener: ((event: MessageEvent<MessageAugment<RecieveMessageType>>) => void) | undefined;
 
   /**
-   * 构造函数
-   * @param {string} remoteOrigin - 远程窗口的安全源 (例如 "https://example.com")
-   * @param {Window} targetWindow - 目标窗口实例 (例如 iframe.contentWindow 或 parent)
+   * 创建一个新的 `IframeBridge` 实例。
+   *
+   * @param remoteOrigin - 对端窗口的来源，例如 `"https://example.com"`。
+   *                       来源不匹配的消息将被静默丢弃。
+   * @param targetWindow - {@link sendMessage} 调用 `postMessage` 的目标窗口引用。
+   *                       父窗口侧传入 `iframe.contentWindow`，
+   *                       iframe 侧传入 `window.parent`。
    */
   constructor(remoteOrigin: string, targetWindow: Window) {
     this.remoteOrigin = remoteOrigin;
@@ -71,53 +109,70 @@ export class IframeBridge<SendMessageType = MessageWithType, RecieveMessageType 
   }
 
   /**
-   * 向目标窗口发送消息
+   * 向远端窗口发送一条类型安全的消息。
    *
-   * @param {SendMessageType} message - 要发送的消息内容
+   * 消息在发送前会被包装为 {@link MessageAugment} 信封，
+   * 以便接收侧的 {@link addEventListener} 能将其与无关的 `postMessage` 流量区分开来。
+   *
+   * **空操作保护**：若 `targetWindow` 与当前 `window` 为同一对象，
+   * 调用将被静默跳过，防止在无 iframe 的本地环境中触发无限消息反馈循环。
+   *
+   * @param message - 待发送的业务层消息载荷。
    */
   sendMessage(message: SendMessageType) {
     if (window === this.targetWindow) {
-      // 当只有当前页面打开（目标窗口就是自身）时，不要执行发送。
-      // 否则会引发无限循环触发自身的监听器从而导致浏览器崩溃，
-      // 或者产生监听自身消息的“回音”效应。
+      // don't run when it's only this page open. It can crash the browser with an endless
+      // loop of triggering our own message listener or just create "feedback" listening to our own messages
       return;
     }
     this.targetWindow.postMessage({ id: "sandcastle-bridge", message: message }, this.remoteOrigin);
   }
 
   /**
-   * 注册消息接收监听器
+   * 注册消息处理函数，在收到来自远端窗口的合法消息时触发。
    *
-   * @param {(event: RecieveMessageType) => void} handler - 处理接收到的消息的回调函数
-   * @returns 注册的事件处理函数引用
+   * 处理函数被调用前，消息需通过以下三道校验：
+   * 1. **信封校验** — 事件数据必须携带 `sandcastle-bridge` 包装，
+   *    过滤掉 React DevTools、Monaco Editor 等第三方消息。
+   * 2. **来源校验** — `event.origin` 必须与 {@link remoteOrigin} 完全一致，
+   *    过滤掉非预期来源的消息。
+   * 3. **同窗口校验** — 消息来源不得是当前窗口自身，
+   *    防止意外处理自发消息。
+   *
+   * > ⚠️ 重复调用本方法会覆盖内部保存的监听引用，但**不会**自动移除旧监听。
+   * > 如需替换处理函数，请先调用 {@link removeEventListener}。
+   *
+   * @param handler - 接收已解包的业务层消息载荷的回调函数。
+   * @returns 已挂载到 `window` 上的原始监听函数，
+   *          供需要直接管理监听生命周期的调用方使用。
    */
   addEventListener(handler: (event: RecieveMessageType) => void) {
     this.#windowListener = (e: MessageEvent<MessageAugment<RecieveMessageType>> | MessageEvent) => {
       if (!isKnownMessageStructure<RecieveMessageType>(e)) {
-        // 完全忽略任何不符合预期结构的消息。
-        // 例如 React devtools 的通信消息，或 Monaco Editor 的内部警告。
+        // completely ignore any message that doesn't have the structure we expect
+        // For example react devtools messages or monaco editor alerts
         return;
       }
 
       if (e.origin !== this.remoteOrigin) {
-        // 出于安全考虑，忽略来自未知源（origin）的消息
+        // ignore messages from origins we don't recognize
         return;
       }
       if (window === e.source) {
-        // 忽略由当前窗口自己发出的消息
+        // ignore messages that come from the same window
         return;
       }
 
       handler(e.data.message);
     };
-
     window.addEventListener("message", this.#windowListener);
     return this.#windowListener;
   }
 
   /**
-   * 移除已注册的消息接收监听器
-   * 防止内存泄漏或重复监听
+   * 移除最近一次 {@link addEventListener} 注册的消息监听函数。
+   *
+   * 若从未调用过 {@link addEventListener}，本方法为空操作，不会抛出异常。
    */
   removeEventListener() {
     if (this.#windowListener) {
