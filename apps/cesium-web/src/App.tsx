@@ -6,6 +6,7 @@ import { Icon } from "@/components/icon";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import Bucket from "@/components/Bucket/Bucket.tsx";
 import SandcastleEditor from "@/components/SandcastleEditor/SandcastleEditor";
+import ConsoleMirror from "@/components/ConsoleMirror/ConsoleMirror.tsx";
 import { useCodeState } from "@/hooks/useCodeState";
 
 function App() {
@@ -19,7 +20,6 @@ function App() {
         {/* 左侧侧边栏按钮区域 */}
         <div className="flex w-12 flex-col justify-between py-4 border-r bg-background m-1.25!">
           <div className="flex flex-col items-center gap-4">
-            {/* --- 画廊展示切换按钮 --- */}
             <Button
               variant={activeView === "gallery" ? "secondary" : "ghost"}
               size="icon"
@@ -29,7 +29,6 @@ function App() {
               <Icon icon="mdi:file-image-marker" className="text-xl" />
             </Button>
 
-            {/* --- 代码查看器切换按钮 --- */}
             <Button
               variant={activeView === "editor" ? "secondary" : "ghost"}
               size="icon"
@@ -40,12 +39,10 @@ function App() {
             </Button>
           </div>
           <div className="flex flex-col items-center gap-4">
-            {/* 主题切换按钮 */}
             <Button variant="ghost" size="icon" className="h-10 w-10">
               <Icon icon="mdi:theme-light-dark" className="text-xl" />
             </Button>
 
-            {/* 设置按钮 */}
             <Button variant="ghost" size="icon" className="h-10 w-10" title="设置">
               <Icon icon="mdi:settings-outline" className="text-xl" />
             </Button>
@@ -83,17 +80,26 @@ function App() {
           )}
         </Panel>
 
-        {/* 右侧主面板：包含视图和控制台 */}
+        {/* 右侧主面板：包含视图和控制台的垂直布局 */}
         <Panel minSize={200}>
-          {/* Cesium 视窗区域 - Bucket 内部已包含两个 Panel 和一个 Group */}
-          <Bucket
-            code={codeState.committedCode}
-            html={codeState.committedHtml}
-            runNumber={codeState.runNumber}
-            highlightLine={() => {}}
-            appendConsole={() => {}}
-            resetConsole={() => {}}
-          />
+          <Group orientation="vertical">
+            {/* Cesium 视窗区域 */}
+            <Panel minSize={20}>
+              <Bucket
+                code={codeState.committedCode}
+                html={codeState.committedHtml}
+                runNumber={codeState.runNumber}
+                highlightLine={() => {}}
+                appendConsole={() => {}}
+                resetConsole={() => {}}
+              />
+            </Panel>
+
+            {/* 控制台区域 */}
+            <Panel minSize={30} defaultSize={100}>
+              <ConsoleMirror />
+            </Panel>
+          </Group>
         </Panel>
       </Group>
     </div>
