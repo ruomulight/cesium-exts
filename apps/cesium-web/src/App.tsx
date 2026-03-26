@@ -8,6 +8,7 @@ import Bucket from "@/components/Bucket/Bucket.tsx";
 import SandcastleEditor from "@/components/SandcastleEditor/SandcastleEditor";
 import ConsoleMirror from "@/components/ConsoleMirror/ConsoleMirror.tsx";
 import { useCodeState } from "@/hooks/useCodeState";
+import { ErrorBoundary } from "@/components/ErrorBoundary/ErrorBoundary";
 
 function App() {
   const [codeState, dispatch] = useCodeState();
@@ -49,35 +50,43 @@ function App() {
           </div>
         </div>
 
-        <Panel defaultSize={600} minSize={200} className="flex flex-col m-1.25!">
-          {activeView === "editor" ? (
-            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full h-full flex flex-col">
-              <TabsList variant="line" className="shrink-0">
-                <TabsTrigger value="javascript">Javascript</TabsTrigger>
-                <TabsTrigger value="html">HTML/CSS</TabsTrigger>
-              </TabsList>
-              <div className="flex-1 mt-0">
-                <div className="h-full flex flex-col">
-                  <SandcastleEditor
-                    language={activeTab}
-                    value={activeTab === "javascript" ? codeState.code : codeState.html}
-                    onChange={val => {
-                      dispatch(
-                        activeTab === "javascript" ? { type: "setCode", code: val } : { type: "setHtml", html: val }
-                      );
-                    }}
-                  />
+        <Panel defaultSize={600} minSize={400} className="flex flex-col m-1.25!">
+          <ErrorBoundary>
+            {activeView === "editor" ? (
+              <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full h-full flex flex-col">
+                <div className="flex items-center justify-between shrink-0">
+                  <TabsList variant="line">
+                    <TabsTrigger value="javascript">Javascript</TabsTrigger>
+                    <TabsTrigger value="html">HTML/CSS</TabsTrigger>
+                  </TabsList>
+                  <Button onClick={() => dispatch({ type: "runSandcastle" })} variant="default" size="sm">
+                    <Icon icon="mdi:play" className="text-sm" />
+                    运行
+                  </Button>
+                </div>
+                <div className="flex-1 mt-0">
+                  <div className="h-full flex flex-col">
+                    <SandcastleEditor
+                      language={activeTab}
+                      value={activeTab === "javascript" ? codeState.code : codeState.html}
+                      onChange={val => {
+                        dispatch(
+                          activeTab === "javascript" ? { type: "setCode", code: val } : { type: "setHtml", html: val }
+                        );
+                      }}
+                    />
+                  </div>
+                </div>
+              </Tabs>
+            ) : (
+              <div className="flex items-center justify-center h-full bg-muted/30 text-muted-foreground border rounded-lg">
+                <div className="flex flex-col items-center gap-2">
+                  <Icon icon="mdi:view-grid-plus-outline" className="text-4xl opacity-50" />
+                  <p>画廊视图正在开发中...</p>
                 </div>
               </div>
-            </Tabs>
-          ) : (
-            <div className="flex items-center justify-center h-full bg-muted/30 text-muted-foreground border rounded-lg">
-              <div className="flex flex-col items-center gap-2">
-                <Icon icon="mdi:view-grid-plus-outline" className="text-4xl opacity-50" />
-                <p>画廊视图正在开发中...</p>
-              </div>
-            </div>
-          )}
+            )}
+          </ErrorBoundary>
         </Panel>
 
         {/* 右侧主面板：包含视图和控制台的垂直布局 */}
@@ -85,14 +94,16 @@ function App() {
           <Group orientation="vertical">
             {/* Cesium 视窗区域 */}
             <Panel minSize={20}>
-              <Bucket
-                code={codeState.committedCode}
-                html={codeState.committedHtml}
-                runNumber={codeState.runNumber}
-                highlightLine={() => {}}
-                appendConsole={() => {}}
-                resetConsole={() => {}}
-              />
+              <ErrorBoundary>
+                <Bucket
+                  code={codeState.committedCode}
+                  html={codeState.committedHtml}
+                  runNumber={codeState.runNumber}
+                  highlightLine={() => {}}
+                  appendConsole={() => {}}
+                  resetConsole={() => {}}
+                />
+              </ErrorBoundary>
             </Panel>
 
             {/* 控制台区域 */}

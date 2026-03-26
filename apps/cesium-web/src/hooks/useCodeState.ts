@@ -50,7 +50,7 @@ const initialState: CodeState = {
   html: defaultHtmlCode,
   committedCode: defaultJsCode,
   committedHtml: defaultHtmlCode,
-  runNumber: 0,
+  runNumber: 1,
   dirty: false
 };
 
