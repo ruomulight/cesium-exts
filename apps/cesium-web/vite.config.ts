@@ -12,6 +12,14 @@ export default defineConfig({
       "@": path.resolve(__dirname, "./src")
     }
   },
+  // 定义全局常量，用于 Bucket 组件的跨域通信
+  // __INNER_ORIGIN__: iframe bucket 页面的 origin (默认使用 location.origin)
+  // __OUTER_ORIGIN__: 父级应用的 origin
+  define: {
+    __INNER_ORIGIN__: JSON.stringify(process.env.VITE_INNER_ORIGIN || ""),
+    __OUTER_ORIGIN__: JSON.stringify(process.env.VITE_OUTER_ORIGIN || ""),
+    __CESIUM_BASE_URL__: JSON.stringify(process.env.VITE_CESIUM_BASE_URL || "/cesium")
+  },
   // 配置开发服务器
   server: {
     // 允许通过 IP 地址访问开发服务器
