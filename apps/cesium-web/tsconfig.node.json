@@ -1,6 +1,5 @@
 {
   "compilerOptions": {
-    "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.node.tsbuildinfo",
     "target": "ES2023", // 目标 ECMAScript 版本
     "lib": ["ES2023"], // 包含的库文件
     "module": "ESNext", // 指定生成的模块代码版本

@@ -22,7 +22,7 @@ export default defineConfig([
     rules: {
       // react-refresh 规则，允许导出常量
       "react-refresh/only-export-components": "off",
-
+      "@typescript-eslint/no-explicit-any": "warn",
       "@typescript-eslint/no-unused-vars": [
         "error",
         {

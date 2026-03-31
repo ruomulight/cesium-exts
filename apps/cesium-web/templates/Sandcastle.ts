@@ -24,7 +24,6 @@ type SelectOption = {
   onselect: () => void;
 };
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any -- 我们不关心键的具体类型
 const registered = new Map<any, number>();
 
 /**
