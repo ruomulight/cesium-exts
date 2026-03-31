@@ -62,16 +62,20 @@ function App() {
           <ErrorBoundary>
             {activeView === "editor" ? (
               <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full h-full flex flex-col">
-                <div className="flex items-center justify-between shrink-0">
-                  <TabsList variant="line">
+                <TabsList variant="line" className="flex w-full items-center justify-between px-2">
+                  <div>
                     <TabsTrigger value="javascript">Javascript</TabsTrigger>
                     <TabsTrigger value="html">HTML/CSS</TabsTrigger>
-                  </TabsList>
-                  <Button onClick={() => dispatch({ type: "runSandcastle" })} variant="default" size="sm">
-                    <Icon icon="mdi:play" className="text-sm" />
-                    运行
-                  </Button>
-                </div>
+                  </div>
+
+                  <div>
+                    <Button onClick={() => dispatch({ type: "runSandcastle" })} variant="default" size="sm">
+                      <Icon icon="mdi:play" className="text-sm" />
+                      运行
+                    </Button>
+                  </div>
+                </TabsList>
+
                 <div className="flex-1 mt-0">
                   <div className="h-full flex flex-col">
                     <SandcastleEditor
