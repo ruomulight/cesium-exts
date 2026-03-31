@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Panel, Group } from "react-resizable-panels";
+import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
 
 import { Button } from "@/components/ui/button.tsx";
 import { Icon } from "@/components/icon";
@@ -19,7 +19,7 @@ function App() {
 
   return (
     <div className="h-screen w-screen">
-      <Group orientation="horizontal">
+      <ResizablePanelGroup orientation="horizontal">
         {/* 左侧侧边栏按钮区域 */}
         <div className="flex w-12 flex-col justify-between py-4 border-r bg-background m-1.25!">
           <div className="flex flex-col items-center gap-4">
@@ -58,7 +58,7 @@ function App() {
           </div>
         </div>
 
-        <Panel defaultSize={600} minSize={400} className="flex flex-col m-1.25!">
+        <ResizablePanel defaultSize={600} minSize={400} className="flex flex-col m-1.25!">
           <ErrorBoundary>
             {activeView === "editor" ? (
               <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full h-full flex flex-col">
@@ -95,13 +95,15 @@ function App() {
               </div>
             )}
           </ErrorBoundary>
-        </Panel>
+        </ResizablePanel>
+
+        <ResizableHandle withHandle />
 
         {/* 右侧主面板：包含视图和控制台的垂直布局 */}
-        <Panel minSize={200}>
-          <Group orientation="vertical">
+        <ResizablePanel minSize={200}>
+          <ResizablePanelGroup orientation="vertical">
             {/* Cesium 视窗区域 */}
-            <Panel minSize={20}>
+            <ResizablePanel minSize={20}>
               <ErrorBoundary>
                 <Bucket
                   code={codeState.committedCode}
@@ -112,16 +114,18 @@ function App() {
                   resetConsole={() => {}}
                 />
               </ErrorBoundary>
-            </Panel>
+            </ResizablePanel>
+
+            <ResizableHandle withHandle />
 
             {/* 控制台区域 */}
-            <Panel minSize={30} defaultSize={100}>
+            <ResizablePanel minSize={30} defaultSize={100}>
               <ConsoleMirror />
-            </Panel>
-          </Group>
-        </Panel>
+            </ResizablePanel>
+          </ResizablePanelGroup>
+        </ResizablePanel>
         <SettingsDialog open={settingsOpen} onOpenChange={setSettingsOpen} />
-      </Group>
+      </ResizablePanelGroup>
     </div>
   );
 }
