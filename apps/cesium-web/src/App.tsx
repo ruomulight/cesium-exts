@@ -9,11 +9,13 @@ import SandcastleEditor from "@/components/SandcastleEditor/SandcastleEditor";
 import ConsoleMirror from "@/components/ConsoleMirror/ConsoleMirror.tsx";
 import { useCodeState } from "@/hooks/useCodeState";
 import { ErrorBoundary } from "@/components/ErrorBoundary/ErrorBoundary";
+import { SettingsDialog } from "@/components/SettingsDialog/SettingsDialog";
 
 function App() {
   const [codeState, dispatch] = useCodeState();
   const [activeTab, setActiveTab] = useState("javascript");
   const [activeView, setActiveView] = useState<"editor" | "gallery">("gallery");
+  const [settingsOpen, setSettingsOpen] = useState(false);
 
   return (
     <div className="h-screen w-screen">
@@ -44,7 +46,13 @@ function App() {
               <Icon icon="mdi:theme-light-dark" className="text-xl" />
             </Button>
 
-            <Button variant="ghost" size="icon" className="h-10 w-10" title="设置">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-10 w-10"
+              title="设置"
+              onClick={() => setSettingsOpen(true)}
+            >
               <Icon icon="mdi:settings-outline" className="text-xl" />
             </Button>
           </div>
@@ -112,6 +120,7 @@ function App() {
             </Panel>
           </Group>
         </Panel>
+        <SettingsDialog open={settingsOpen} onOpenChange={setSettingsOpen} />
       </Group>
     </div>
   );
