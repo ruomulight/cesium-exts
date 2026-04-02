@@ -7,8 +7,8 @@ settings:
 catalogs:
   default:
     cesium:
-      specifier: ^1.139.0
-      version: 1.139.0
+      specifier: ^1.140.0
+      version: 1.140.0
     eslint:
       specifier: ^9.39.3
       version: 9.39.3
@@ -43,7 +43,7 @@ importers:
         version: 4.2.1(vite@7.3.1(@types/node@24.11.0)(jiti@2.6.1)(lightningcss@1.31.1)(sass@1.97.3)(terser@5.46.0)(yaml@2.8.2))
       cesium:
         specifier: 'catalog:'
-        version: 1.139.0
+        version: 1.140.0
       class-variance-authority:
         specifier: ^0.7.1
         version: 0.7.1
@@ -158,7 +158,7 @@ importers:
         version: 24.11.0
       cesium:
         specifier: 'catalog:'
-        version: 1.139.0
+        version: 1.140.0
       eslint:
         specifier: 'catalog:'
         version: 9.39.3(jiti@2.6.1)
@@ -319,15 +319,15 @@ packages:
     resolution: {integrity: sha512-LwdZHpScM4Qz8Xw2iKSzS+cfglZzJGvofQICy7W7v4caru4EaAmyUuO6BGrbyQ2mYV11W0U8j5mBhd14dd3B0A==}
     engines: {node: '>=6.9.0'}
 
-  '@cesium/engine@23.0.0':
-    resolution: {integrity: sha512-BtHalUXPdGcfoX9drjbk9zLf+AooTRhjH1WyehPvWaCFcxtzJmJasrTHseyXVibLnWZRXP1b+fo5PS0frIf1Tg==}
+  '@cesium/engine@24.0.0':
+    resolution: {integrity: sha512-zJ2gl0tyw/FFhBtvp6UYw+0JQJb2J9EiTJYvVSndc6+6qPR5GHLFzFjA1msLLxucfcpc7uI9R2pXNEPluheR/g==}
     engines: {node: '>=20.19.0'}
 
   '@cesium/wasm-splats@0.1.0-alpha.2':
     resolution: {integrity: sha512-t9pMkknv31hhIbLpMa8yPvmqfpvs5UkUjgqlQv9SeO8VerCXOYnyP8/486BDaFrztM0A7FMbRjsXtNeKvqQghA==}
 
-  '@cesium/widgets@14.4.0':
-    resolution: {integrity: sha512-NWSUTNej7QRC4tXZKt2ZuZ1LnNoQwfjCJ0K8reet8K6hIKZKlcjADAIlvBscg7JEhQa5gr1bC2DOn0jpXyqquA==}
+  '@cesium/widgets@14.5.0':
+    resolution: {integrity: sha512-h/hKVooXyOtUQJUtrfyBFGMIXb+Q3RLwqE6FzXfzyC0JQuuThLXCz8nRzCPbyiRuAR/aAYT/jbbhQrUxfiWqhQ==}
     engines: {node: '>=20.19.0'}
 
   '@dotenvx/dotenvx@1.52.0':
@@ -1732,8 +1732,8 @@ packages:
     resolution: {integrity: sha512-tlqY9xq5ukxTUZBmoOp+m61cqwQD5pHJtFY3Mn8CA8ps6yghLH/Hw8UPdqg4OLmFW3IFlcXnQNmo/dh8HzXYIQ==}
     engines: {node: '>=18'}
 
-  '@spz-loader/core@0.3.0':
-    resolution: {integrity: sha512-sbStwMHb/MIE29st7rRuMYWqhX1UmLSFzdpyGtUZUXLkFNIuYKblzjQdtiet8bau8sUf21uL1DQ451zuySGmcA==}
+  '@spz-loader/core@0.3.1':
+    resolution: {integrity: sha512-8qJ1WIBXaJu8HjnJAjYniE0kYcr0kCe5Hp7kDzYiGVvvd7zyrOBwbF5imoW5mvwx1Qba0hxGEK5R9jEoaHKJFA==}
     engines: {node: '>=16', pnpm: '>=8'}
 
   '@swc/core-darwin-arm64@1.15.18':
@@ -2204,8 +2204,8 @@ packages:
   caniuse-lite@1.0.30001776:
     resolution: {integrity: sha512-sg01JDPzZ9jGshqKSckOQthXnYwOEP50jeVFhaSFbZcOy05TiuuaffDOfcwtCisJ9kNQuLBFibYywv2Bgm9osw==}
 
-  cesium@1.139.0:
-    resolution: {integrity: sha512-KAzaQiznmb6AcqMcQdL/kgbGtEiwVv+eHQQEtvFZ+XWuzyl8Cf7J0YRT6068ewF3VS1FALiMdi/cvaR2H9uw7A==}
+  cesium@1.140.0:
+    resolution: {integrity: sha512-3RvW0rvZWuXiS6regtNE5u9vt0uXohgpsRBIo6Qc922IIIamkitYiEdr4fg+u4qX4EoK9xS3BosCza7iPOExEQ==}
     engines: {node: '>=20.19.0'}
 
   chalk@4.1.2:
@@ -4576,10 +4576,10 @@ snapshots:
       '@babel/helper-string-parser': 7.27.1
       '@babel/helper-validator-identifier': 7.28.5
 
-  '@cesium/engine@23.0.0':
+  '@cesium/engine@24.0.0':
     dependencies:
       '@cesium/wasm-splats': 0.1.0-alpha.2
-      '@spz-loader/core': 0.3.0
+      '@spz-loader/core': 0.3.1
       '@tweenjs/tween.js': 25.0.0
       '@zip.js/zip.js': 2.8.22
       autolinker: 4.1.5
@@ -4602,9 +4602,9 @@ snapshots:
 
   '@cesium/wasm-splats@0.1.0-alpha.2': {}
 
-  '@cesium/widgets@14.4.0':
+  '@cesium/widgets@14.5.0':
     dependencies:
-      '@cesium/engine': 23.0.0
+      '@cesium/engine': 24.0.0
       nosleep.js: 0.12.0
 
   '@dotenvx/dotenvx@1.52.0':
@@ -5908,7 +5908,7 @@ snapshots:
 
   '@sindresorhus/merge-streams@4.0.0': {}
 
-  '@spz-loader/core@0.3.0': {}
+  '@spz-loader/core@0.3.1': {}
 
   '@swc/core-darwin-arm64@1.15.18':
     optional: true
@@ -6338,10 +6338,10 @@ snapshots:
 
   caniuse-lite@1.0.30001776: {}
 
-  cesium@1.139.0:
+  cesium@1.140.0:
     dependencies:
-      '@cesium/engine': 23.0.0
-      '@cesium/widgets': 14.4.0
+      '@cesium/engine': 24.0.0
+      '@cesium/widgets': 14.5.0
 
   chalk@4.1.2:
     dependencies:

@@ -2,5 +2,5 @@ packages:
   - "apps/*"
   - "packages/*"
 catalog:
-  cesium: '^1.139.0'
+  cesium: "^1.140.0"
   eslint: "^9.39.3"
