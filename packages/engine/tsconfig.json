@@ -1,8 +1,5 @@
 {
   "compilerOptions": {
-    // 设置模块解析的基准目录（用于相对路径导入）
-    "baseUrl": ".",
-
     // 指定生成的模块代码使用 ES 模块语法（import/export），适用于现代打包工具（如 Vite、Webpack）
     "module": "esnext",
 

@@ -119,7 +119,6 @@ function Bucket({ code, html, runNumber, highlightLine, appendConsole, resetCons
         }}
         id="bucketFrame"
         className="fullFrame"
-        src="/templates/bucket.html"
         allowFullScreen
         loading="lazy"
       />

@@ -25,7 +25,6 @@
     "noFallthroughCasesInSwitch": true, // 防止 switch 穿透
     "noUncheckedSideEffectImports": true, // 检查无副作用导入的有效性
 
-    "baseUrl": ".", // 解析非相对模块名称的基目录
     "paths": {
       "@/*": ["./src/*"] // 路径别名映射
     }
