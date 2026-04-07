@@ -52,7 +52,7 @@ function App() {
               onClick={() => setTheme(resolvedTheme === "dark" ? "light" : "dark")}
             >
               <Icon
-                icon={resolvedTheme === "dark" ? "mdi:white-balance-sunny" : "mdi:moon-waning-crescent"}
+                icon={resolvedTheme === "dark" ? "mdi:white-balance-sunny" : "mdi:moon-and-stars"}
                 className="text-xl"
               />
             </Button>
