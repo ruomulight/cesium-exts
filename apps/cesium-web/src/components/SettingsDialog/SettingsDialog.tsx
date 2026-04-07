@@ -9,6 +9,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Icon } from "@/components/icon";
+import { useTheme } from "../../contexts/ThemeContext";
 
 interface SettingsDialogProps {
   open: boolean;
@@ -16,6 +17,8 @@ interface SettingsDialogProps {
 }
 
 export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
+  const { mode, setTheme } = useTheme();
+
   return (
     <AlertDialog open={open} onOpenChange={onOpenChange}>
       <AlertDialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
@@ -70,19 +73,32 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
             <div className="space-y-2">
               <p className="text-sm font-medium">主题</p>
               <div className="grid grid-cols-3 gap-2">
-                <Button variant="outline" className="justify-start">
+                <Button
+                  variant={mode === "light" ? "default" : "outline"}
+                  className="justify-start"
+                  onClick={() => setTheme("light")}
+                >
                   <Icon icon="mdi:white-balance-sunny" className="mr-2" />
                   浅色
                 </Button>
-                <Button variant="outline" className="justify-start">
+                <Button
+                  variant={mode === "dark" ? "default" : "outline"}
+                  className="justify-start"
+                  onClick={() => setTheme("dark")}
+                >
                   <Icon icon="mdi:moon-waning-crescent" className="mr-2" />
                   深色
                 </Button>
-                <Button variant="outline" className="justify-start">
+                <Button
+                  variant={mode === "system" ? "default" : "outline"}
+                  className="justify-start"
+                  onClick={() => setTheme("system")}
+                >
                   <Icon icon="mdi:theme-light-dark" className="mr-2" />
                   自动
                 </Button>
               </div>
+              {mode === "system" && <p className="text-xs text-muted-foreground">主题将跟随系统设置自动切换</p>}
             </div>
           </TabsContent>
 

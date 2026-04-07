@@ -1,5 +1,6 @@
 import { Editor, type EditorProps } from "@monaco-editor/react";
 import { memo } from "react";
+import { useTheme } from "../../contexts/ThemeContext";
 
 /**
  * SandcastleEditor 组件的属性接口
@@ -41,6 +42,8 @@ const DEFAULT_EDITOR_OPTIONS: EditorProps["options"] = {
  * 提供代码编辑功能，基于 Monaco Editor 封装
  */
 const SandcastleEditor = ({ value = "", language = "javascript", onChange }: SandcastleEditorProps) => {
+  const { resolvedTheme } = useTheme();
+
   /**
    * 处理编辑器内容变化
    * @param val - 变化后的代码内容
@@ -54,7 +57,7 @@ const SandcastleEditor = ({ value = "", language = "javascript", onChange }: San
       {/* Monaco Editor 编辑器主体 */}
       <div className="flex-1 overflow-hidden">
         <Editor
-          theme="dark"
+          theme={resolvedTheme === "dark" ? "vs-dark" : "light"}
           language={language}
           value={value}
           onChange={handleEditorChange}

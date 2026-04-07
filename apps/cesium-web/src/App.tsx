@@ -10,8 +10,10 @@ import ConsoleMirror from "@/components/ConsoleMirror/ConsoleMirror.tsx";
 import { useCodeState } from "@/hooks/useCodeState";
 import { ErrorBoundary } from "@/components/ErrorBoundary/ErrorBoundary";
 import { SettingsDialog } from "@/components/SettingsDialog/SettingsDialog";
+import { useTheme } from "./contexts/ThemeContext";
 
 function App() {
+  const { resolvedTheme, setTheme } = useTheme();
   const [codeState, dispatch] = useCodeState();
   const [activeTab, setActiveTab] = useState("javascript");
   const [activeView, setActiveView] = useState<"editor" | "gallery">("gallery");
@@ -42,8 +44,17 @@ function App() {
             </Button>
           </div>
           <div className="flex flex-col items-center gap-4">
-            <Button variant="ghost" size="icon" className="h-10 w-10">
-              <Icon icon="mdi:theme-light-dark" className="text-xl" />
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-10 w-10"
+              title={resolvedTheme === "dark" ? "切换到浅色模式" : "切换到深色模式"}
+              onClick={() => setTheme(resolvedTheme === "dark" ? "light" : "dark")}
+            >
+              <Icon
+                icon={resolvedTheme === "dark" ? "mdi:white-balance-sunny" : "mdi:moon-waning-crescent"}
+                className="text-xl"
+              />
             </Button>
 
             <Button
