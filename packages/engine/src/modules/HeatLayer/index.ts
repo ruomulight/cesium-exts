@@ -1,7 +1,7 @@
-import h337 from "./src/core";
+import h337, { Heatmap } from "./src/core";
 
 class HeatLayer {
-  heatmap: any;
+  heatmap: Heatmap;
   constructor() {
     this.heatmap = h337.create({});
   }
