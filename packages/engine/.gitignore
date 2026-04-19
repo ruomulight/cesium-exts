@@ -1,9 +1,5 @@
-# 忽略所有 index.ts 和 index.d.ts
-index.ts
-index.d.ts
-
-# 忽略着色器编译后的 JS 文件
-Source/Shaders/**/*.js
-
-# 但是允许 packages/engine/modules 下的 index.ts 被提交
-!modules/**/index.ts
+# .gitignore
+# Node
+node_modules/
+dist/
+build/
