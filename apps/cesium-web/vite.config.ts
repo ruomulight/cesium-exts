@@ -3,10 +3,11 @@ import path from "path";
 import tailwindcss from "@tailwindcss/vite";
 import { type BuildEnvironmentOptions, defineConfig } from "vite";
 import react from "@vitejs/plugin-react-swc";
+import examplePlugin from "vite-cesium-plugin";
 
 // https://vite.dev/config/
 export default defineConfig({
-  plugins: [react(), tailwindcss()],
+  plugins: [react(), tailwindcss(), examplePlugin()],
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src")

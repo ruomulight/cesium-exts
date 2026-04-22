@@ -1,0 +1,38 @@
+{
+  "name": "vite-cesium-plugin",
+  "version": "1.0.0",
+  "description": "Vite 插件模板",
+  "type": "module",
+  "main": "src/index.ts",
+  "module": "src/index.ts",
+  "types": "src/index.ts",
+  "exports": {
+    ".": {
+      "import": "./src/index.ts",
+      "types": "./src/index.ts"
+    }
+  },
+  "keywords": [
+    "vite",
+    "plugin",
+    "template"
+  ],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "fs-extra": "^9.1.0",
+    "rollup-plugin-external-globals": "^0.6.1",
+    "serve-static": "^1.14.1"
+  },
+  "devDependencies": {
+    "@types/fs-extra": "^9.0.8",
+    "@types/serve-static": "^1.13.9",
+    "typescript": "catalog:"
+  },
+  "peerDependencies": {
+    "cesium": "^1.95.0",
+    "vite": "catalog:",
+    "typescript-eslint": "catalog:",
+    "globals": "catalog:"
+  }
+}
