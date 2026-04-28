@@ -5,8 +5,11 @@ import { IframeBridge, type BridgeToBucket, type MessageToApp } from "@/util/Ifr
 import { embedInSandcastleTemplate } from "@/util/Helpers";
 import { type ConsoleMessageType } from "@/components/ConsoleMirror/ConsoleMirror.tsx";
 
-const INNER_ORIGIN = "__INNER_ORIGIN__";
-
+const INNER_ORIGIN = typeof __INNER_ORIGIN__ !== "undefined" ? __INNER_ORIGIN__ : window.location.origin;
+// This constructs urls like `[__INNER_ORIGIN__]/[pathname]/templates/bucket.html`
+// using location.pathname lets this adapt to deployed locations like CI
+const bucketUrl = `${new URL(`${location.pathname.replace(/[^\\/]+.html/, "")}templates/bucket.html`, INNER_ORIGIN)}`;
+console.log(bucketUrl);
 /**
  * Bucket 组件的属性接口
  * @interface BucketProps
@@ -118,7 +121,9 @@ function Bucket({ code, html, runNumber, highlightLine, appendConsole, resetCons
           }
         }}
         id="bucketFrame"
+        src={bucketUrl}
         className="fullFrame"
+        sandbox="allow-scripts allow-same-origin"
         allowFullScreen
         loading="lazy"
       />
