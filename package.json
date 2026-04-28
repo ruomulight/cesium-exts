@@ -10,6 +10,14 @@
     "format": "prettier --write \"**/*.{js,ts,mjs,cjs,json,tsx,css,less,scss,vue,html,md}\"",
     "prepare": "husky || true"
   },
+  "lint-staged": {
+    "*.{js,ts,mjs,cjs,json,tsx,css,less,scss,vue,html,md}": [
+      "prettier --write"
+    ],
+    "*.{js,ts,mjs,cjs,tsx}": [
+      "pnpm exec eslint --fix"
+    ]
+  },
   "devDependencies": {
     "eslint": "^10.0.2",
     "husky": "^9.1.7",
@@ -22,13 +30,5 @@
     "node": ">=22.18.0",
     "npm": ">=10.9.3",
     "pnpm": ">=10.10.0"
-  },
-  "lint-staged": {
-    "*.{js,ts,mjs,cjs,json,tsx,css,less,scss,vue,html,md}": [
-      "prettier --write"
-    ],
-    "*.{js,ts,mjs,cjs,tsx}": [
-      "pnpm exec eslint --fix"
-    ]
   }
 }
