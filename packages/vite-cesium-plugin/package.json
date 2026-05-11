@@ -1,7 +1,7 @@
 {
   "name": "vite-cesium-plugin",
   "version": "1.0.0",
-  "description": "Vite 插件模板",
+  "description": "Vite 插件，用于在 Vite 项目中无缝集成 CesiumJS",
   "type": "module",
   "main": "src/index.ts",
   "module": "src/index.ts",
