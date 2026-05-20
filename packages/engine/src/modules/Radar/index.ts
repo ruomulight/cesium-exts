@@ -3,7 +3,7 @@ import * as Cesium from "cesium";
 /**
  * 描述单个雷达实例的空间坐标点位
  */
-export interface RadarPosition {
+interface RadarPosition {
   /** 经度 (十进制度数) */
   longitude: number;
   /** 纬度 (十进制度数) */
@@ -15,7 +15,7 @@ export interface RadarPosition {
 /**
  * 立体雷达扫描矩阵系统初始化配置参数
  */
-export interface RadarScanOptions {
+interface RadarScanOptions {
   /** 初始化时的雷达点位数组，默认为空数组 [] */
   positions?: RadarPosition[];
   /** 雷达探测半径（米），默认 1500 */
@@ -42,7 +42,7 @@ export interface RadarScanOptions {
  * @description 采用底层 GeometryInstance 合并(Batching) 与 GPU 自定义 Shader (Fabric) 技术实现。
  * 支持海量雷达实例同屏丝滑渲染，并且内外结构透明度完全独立可控。
  */
-export class RadarScanPrimitive {
+export default class RadarScanPrimitive {
   // --- 核心依赖与实例标识 ---
   private _scene: Cesium.Scene;
   private _instanceId: string;
