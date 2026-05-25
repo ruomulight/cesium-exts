@@ -182,5 +182,5 @@ async function generateDistPackageJson() {
   };
 
   await writeFile(path.join(projectRoot, "dist", "package.json"), JSON.stringify(pkg, null, 2) + "\n", "utf-8");
-  console.log("✅ dist/package.json 已生成");
+  console.log("☯ dist/package.json 已生成");
 }
