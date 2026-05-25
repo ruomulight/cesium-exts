@@ -5,11 +5,11 @@ import { IframeBridge, type BridgeToBucket, type MessageToApp } from "@/util/Ifr
 import { embedInSandcastleTemplate } from "@/util/Helpers";
 import { type ConsoleMessageType } from "@/components/ConsoleMirror/ConsoleMirror.tsx";
 
-const INNER_ORIGIN = typeof __INNER_ORIGIN__ !== "undefined" ? __INNER_ORIGIN__ : window.location.origin;
+const INNER_ORIGIN = __INNER_ORIGIN__;
 // This constructs urls like `[__INNER_ORIGIN__]/[pathname]/templates/bucket.html`
 // using location.pathname lets this adapt to deployed locations like CI
-const bucketUrl = `${new URL(`${location.pathname.replace(/[^\\/]+.html/, "")}templates/bucket.html`, INNER_ORIGIN)}`;
-console.log(bucketUrl);
+const bucketUrl = `${new URL(`${location.pathname.replace(/[^\\/]+.html/, "")}templates/bucket.html`, __INNER_ORIGIN__)}`;
+
 /**
  * Bucket 组件的属性接口
  * @interface BucketProps
