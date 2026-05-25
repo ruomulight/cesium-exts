@@ -1,4 +1,4 @@
-<!-- <!doctype html>
+<!doctype html>
 <html lang="en" data-color-scheme="dark">
   <head>
     <meta charset="utf-8" />
@@ -8,17 +8,6 @@
       content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no"
     />
     <title>Cesium Demo</title>
-    <script>
-      if (window.location.protocol === "file:") {
-        if (
-          // eslint-disable-next-line no-alert
-          window.confirm("You must host this app on a web server.\nSee contributor's guide for more info?")
-        ) {
-          window.location =
-            "https://github.com/CesiumGS/cesium/blob/main/Documentation/Contributors/BuildGuide/README.md#quickstart";
-        }
-      }
-    </script>
     <link rel="stylesheet" href="__CESIUM_BASE_URL__/Widgets/widgets.css" vite-ignore />
     <link rel="stylesheet" href="__CESIUM_BASE_URL__/Widgets/lighter.css" vite-ignore />
     <style>
@@ -87,17 +76,8 @@
         display: none;
       }
     </style>
-    <script type="module">
-      import { unstable_loadStyles } from "@stratakit/foundations";
-
-      unstable_loadStyles(document);
-    </script>
-    <link rel="stylesheet" href="/styles/stratakit-mimic/styles.css" />
     <script>
       window.CESIUM_BASE_URL = "__CESIUM_BASE_URL__";
     </script>
   </head>
-  <body class="sandcastle-loading">
-    <script src="../src/util/bucket-client.js" type="module"></script>
-  </body>
-</html> -->
+</html>
