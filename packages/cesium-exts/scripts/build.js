@@ -1,7 +1,7 @@
 import path from "path";
 import { fileURLToPath } from "url";
 import { EOL } from "os";
-import { writeFile } from "fs/promises";
+import { readFile, writeFile } from "fs/promises";
 import { globby } from "globby";
 import { rollup } from "rollup";
 
@@ -54,9 +54,12 @@ export async function rollupBuild() {
       throw error;
     } finally {
       // 确保 bundle 总是被关闭，释放资源
-      await bundle?.close();
+      await bundle.close();
     }
   }
+
+  // 生成 dist/package.json
+  await generateDistPackageJson();
 }
 
 /**
@@ -147,4 +150,37 @@ export async function createIndexJs(workspace) {
  */
 function filePathToModuleId(moduleId) {
   return moduleId.substring(0, moduleId.lastIndexOf(".")).replace(/\\/g, "/");
+}
+
+/**
+ * 在 dist 目录生成 npm 发布用的 package.json
+ */
+async function generateDistPackageJson() {
+  const rootPkg = JSON.parse(await readFile(path.join(projectRoot, "package.json"), "utf-8"));
+
+  const pkg = {
+    name: rootPkg.name,
+    version: rootPkg.version,
+    description: rootPkg.description,
+    type: "module",
+    main: "./cesium-exts.cjs.js",
+    module: "./cesium-exts.esm.js",
+    exports: {
+      ".": {
+        import: "./cesium-exts.esm.js",
+        require: "./cesium-exts.cjs.js"
+      }
+    },
+    files: ["cesium-exts.cjs.js", "cesium-exts.esm.js", "cesium-exts.umd.js", "types"],
+    types: "./types/index.d.ts",
+    keywords: rootPkg.keywords,
+    author: rootPkg.author,
+    license: rootPkg.license,
+    peerDependencies: {
+      cesium: rootPkg.peerDependencies.cesium
+    }
+  };
+
+  await writeFile(path.join(projectRoot, "dist", "package.json"), JSON.stringify(pkg, null, 2) + "\n", "utf-8");
+  console.log("✅ dist/package.json 已生成");
 }
