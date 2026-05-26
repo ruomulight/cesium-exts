@@ -6,8 +6,8 @@ import { embedInSandcastleTemplate } from "@/util/Helpers";
 import { type ConsoleMessageType } from "@/components/ConsoleMirror/ConsoleMirror.tsx";
 
 const INNER_ORIGIN = __INNER_ORIGIN__;
-// This constructs urls like `[__INNER_ORIGIN__]/[pathname]/templates/bucket.html`
-// using location.pathname lets this adapt to deployed locations like CI
+// 构建形如 `[__INNER_ORIGIN__]/[pathname]/templates/bucket.html` 的 URL
+// 使用 location.pathname 使 URL 能自适应如 CI 等不同部署环境
 const bucketUrl = `${new URL(`${location.pathname.replace(/[^\\/]+.html/, "")}templates/bucket.html`, __INNER_ORIGIN__)}`;
 
 /**
