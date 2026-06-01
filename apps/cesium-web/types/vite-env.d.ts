@@ -1,10 +1,6 @@
-interface ViteTypeOptions {
-  strictImportMetaEnv: unknown;
-}
-
 interface ImportMetaEnv {
   readonly VITE_APP_TITLE: string;
-  // 更多环境变量...
+  readonly VITE_HOST: string;
 }
 
 interface ImportMeta {
