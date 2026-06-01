@@ -7,6 +7,8 @@ import viteCesiumPlugin from "vite-cesium-plugin";
 
 // https://vite.dev/config/
 export default defineConfig({
+  // 指定 .env 文件所在的目录（相对于项目根目录）
+  envDir: path.resolve(__dirname, ".env"),
   plugins: [react(), tailwindcss(), viteCesiumPlugin()],
   resolve: {
     alias: {

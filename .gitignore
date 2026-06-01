@@ -3,8 +3,6 @@
 node_modules/
 dist/
 build/
-.env
-.env.*
 .turbo
 *.log
 npm-debug.log*
