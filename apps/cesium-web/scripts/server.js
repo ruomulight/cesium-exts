@@ -1,3 +1,1 @@
-(async () => {
-  console.log(888);
-})();
+(async () => {})();
