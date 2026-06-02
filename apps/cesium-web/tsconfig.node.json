@@ -23,5 +23,5 @@
     "noFallthroughCasesInSwitch": true, // 防止 switch 穿透
     "noUncheckedSideEffectImports": true // 检查无副作用导入
   },
-  "include": ["vite.config.ts", "types"] // 包含 Vite 配置文件
+  "include": ["vite.config.ts", "plugins", "types"] // 包含 Vite 配置文件、自定义插件和类型声明
 }

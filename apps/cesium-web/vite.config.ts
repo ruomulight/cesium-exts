@@ -5,6 +5,8 @@ import { type BuildEnvironmentOptions, type ConfigEnv, defineConfig, loadEnv } f
 import react from "@vitejs/plugin-react-swc";
 import viteCesiumPlugin from "vite-cesium-plugin";
 
+import { sandcastlePlugin } from "./plugins/sandcastle";
+
 import pkg from "./package.json" with { type: "json" };
 
 // 平台的名称、版本、运行所需的 node 版本、依赖、构建时间的类型提示
@@ -18,7 +20,7 @@ export default defineConfig((mode: ConfigEnv) => {
   return {
     // 指定 .env 文件所在的目录（相对于项目根目录）
     envDir: path.resolve(__dirname, "env"),
-    plugins: [react(), tailwindcss(), viteCesiumPlugin()],
+    plugins: [react(), tailwindcss(), viteCesiumPlugin(), sandcastlePlugin("/cesium/")],
     resolve: {
       alias: {
         "@": path.resolve(__dirname, "./src")
@@ -58,6 +60,13 @@ export default defineConfig((mode: ConfigEnv) => {
       },
       // 配置 Rollup 打包选项
       rollupOptions: {
+        // 多页面入口配置：将 bucket.html 也作为 Vite 入口，使构建时能正确处理 iframe 页面
+        // 这是官方 Cesium Sandcastle 的关键做法——只有作为入口的 HTML 才会被 Vite 处理
+        // （define 替换、脚本打包、资源引用等）
+        input: {
+          index: path.resolve(__dirname, "./index.html"),
+          bucket: path.resolve(__dirname, "./templates/bucket.html")
+        },
         output: {
           // 用于从入口点创建的块的打包输出格式[name]表示文件名,[hash]表示该文件内容hash值
           entryFileNames: "js/[name].[hash].js",

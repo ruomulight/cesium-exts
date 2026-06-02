@@ -77,7 +77,11 @@
       }
     </style>
     <script>
-      window.CESIUM_BASE_URL = "CESIUM_BASE_URL";
+      window.CESIUM_BASE_URL = "__CESIUM_BASE_URL__";
     </script>
   </head>
+  <body class="sandcastle-loading">
+    <!-- 加载 bucket-client 模块，建立 iframe 与父窗口之间的 IframeBridge 通信 -->
+    <script src="../src/util/bucket-client.ts" type="module"></script>
+  </body>
 </html>
