@@ -1,5 +1,7 @@
-import { basename } from "path";
-import { type HtmlTagDescriptor, type Plugin } from "vite";
+import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { basename, resolve } from "node:path";
+import { execFileSync } from "node:child_process";
+import { type HtmlTagDescriptor, type Plugin, type ResolvedConfig } from "vite";
 
 /**
  * Sandcastle 专用 Vite 插件，参照官方 Cesium Sandcastle 的 cesiumPathReplace + createSandcastleConfig 实现。
@@ -28,10 +30,16 @@ export function sandcastlePlugin(
     cesiumBaseUrl += "/";
   }
 
+  // 存储构建后的输出目录，供 closeBundle 使用
+  let resolvedConfig: ResolvedConfig;
+  // 判断当前是否为构建模式
+  let isBuild = false;
+
   return {
     name: "sandcastle-config",
 
-    config() {
+    config(_, { command }) {
+      isBuild = command === "build";
       return {
         define: {
           // Cesium 静态资源路径（用于 bucket.html 的内联脚本和 JS 模块）
@@ -41,6 +49,10 @@ export function sandcastlePlugin(
           __OUTER_ORIGIN__: "location.origin"
         }
       };
+    },
+
+    configResolved(config) {
+      resolvedConfig = config;
     },
 
     transformIndexHtml: {
@@ -70,6 +82,70 @@ export function sandcastlePlugin(
 
         return { html, tags };
       }
+    },
+
+    async closeBundle() {
+      // 构建结束后，使用 esbuild 将 Sandcastle.ts 编译为独立 JS 文件并写入 dist
+      // 这样 iframe 中的 import map 才能解析 `import Sandcastle from "Sandcastle"`
+      if (!isBuild) return;
+
+      const root = resolvedConfig.root;
+      const outDir = resolvedConfig.build.outDir;
+      const sandcastleSrc = resolve(root, "templates/Sandcastle.ts");
+      const sandcastleOutDir = resolve(outDir, "templates");
+      const sandcastleOut = resolve(sandcastleOutDir, "Sandcastle.js");
+
+      // 确保输出目录存在
+      mkdirSync(sandcastleOutDir, { recursive: true });
+
+      try {
+        // 调用 esbuild 编译 Sandcastle.ts（ESM 格式，不打包依赖）
+        // esbuild 由 Vite 安装，无需额外依赖
+        const npx = process.platform === "win32" ? "npx.cmd" : "npx";
+        execFileSync(
+          npx,
+          [
+            "esbuild",
+            sandcastleSrc,
+            "--outfile=" + sandcastleOut,
+            "--format=esm",
+            "--bundle=false",
+            "--target=esnext",
+            `--define:__OUTER_ORIGIN__=""`,
+            "--log-level=warning"
+          ],
+          { stdio: "pipe" }
+        );
+      } catch (err) {
+        // esbuild 编译失败时，回退为简单复制源文件（开发阶段仍可正常工作）
+        console.warn("Sandcastle.ts 编译失败，尝试复制源文件:", err instanceof Error ? err.message : err);
+        const src = readFileSync(sandcastleSrc, "utf-8");
+        writeFileSync(sandcastleOut, src);
+      }
+
+      // 生成类型声明文件（供 Monaco 编辑器智能提示使用）
+      const sandcastleDts = resolve(sandcastleOutDir, "Sandcastle.d.ts");
+      writeFileSync(
+        sandcastleDts,
+        [
+          "/**",
+          " * Sandcastle 辅助工具的类型声明",
+          " * 由 sandcastlePlugin 在构建时自动生成",
+          " */",
+          "declare const Sandcastle: {",
+          "  reset(): void;",
+          "  declare(key: any): void;",
+          "  highlight(key: any): void;",
+          "  finishedLoading(): void;",
+          "  addToggleButton(text: string, checked: boolean, onchange: (newValue: boolean) => void, toolbarId?: string): void;",
+          "  addToolbarButton(text: string, onclick: () => void, toolbarId?: string): void;",
+          "  addDefaultToolbarButton(text: string, onclick: () => void, toolbarId?: string): void;",
+          "  addToolbarMenu(options: Array<{text: string; value: string; onselect: () => void}>, toolbarId?: string): void;",
+          "  addDefaultToolbarMenu(options: Array<{text: string; value: string; onselect: () => void}>, toolbarId?: string): void;",
+          "};",
+          "export default Sandcastle;"
+        ].join("\n")
+      );
     }
   };
 }
