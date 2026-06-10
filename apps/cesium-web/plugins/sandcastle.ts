@@ -75,7 +75,6 @@ export function sandcastlePlugin(cesiumBaseUrl: string = "/cesium/"): Plugin {
       try {
         // 使用 esbuild JavaScript API 编译 Sandcastle.ts（ESM 格式，不打包依赖）
         // esbuild 由 Vite 安装，无需额外依赖；使用 JS API 替代 CLI 以避免 Windows 上 npx.cmd 的 EINVAL 错误
-        // @ts-expect-error esbuild 是 Vite 的传递依赖，运行时可用但类型声明在 pnpm workspace 中不可直接访问
         const { build: esbuildBuild } = await import("esbuild");
         await esbuildBuild({
           entryPoints: [sandcastleSrc],
