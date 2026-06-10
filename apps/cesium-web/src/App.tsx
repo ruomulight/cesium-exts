@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
 
 import { Button } from "@/components/ui/button.tsx";
@@ -6,8 +6,13 @@ import { Icon } from "@/components/icon";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import Bucket from "@/components/Bucket/Bucket.tsx";
 import SandcastleEditor from "@/components/SandcastleEditor/SandcastleEditor";
-import ConsoleMirror from "@/components/ConsoleMirror/ConsoleMirror.tsx";
+import ConsoleMirror, {
+  type ConsoleMessage,
+  type ConsoleMessageType
+} from "@/components/ConsoleMirror/ConsoleMirror.tsx";
+import Gallery from "@/components/Gallery/Gallery";
 import { useCodeState } from "@/hooks/useCodeState";
+import { useUrlSharing } from "@/hooks/useUrlSharing";
 import { ErrorBoundary } from "@/components/ErrorBoundary/ErrorBoundary";
 import { SettingsDialog } from "@/components/SettingsDialog/SettingsDialog";
 import { useTheme } from "./contexts/ThemeContext";
@@ -16,8 +21,95 @@ function App() {
   const { resolvedTheme, setTheme } = useTheme();
   const [codeState, dispatch] = useCodeState();
   const [activeTab, setActiveTab] = useState("javascript");
-  const [activeView, setActiveView] = useState<"editor" | "gallery">("gallery");
+
+  // --- URL 分享（必须在 activeView 之前调用，以便派生初始视图） ---
+  const { initialData, shareToUrl, copyShareLink } = useUrlSharing();
+
+  const [activeView, setActiveView] = useState<"editor" | "gallery">(initialData ? "editor" : "gallery");
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [shareToast, setShareToast] = useState(false);
+
+  // 从 URL hash 加载初始数据：dispatch 是副作用，放在 effect 中
+  useEffect(() => {
+    if (initialData) {
+      dispatch({ type: "setAndRun", code: initialData.code, html: initialData.html });
+    }
+  }, [initialData, dispatch]);
+
+  // 运行代码时同步到 URL hash
+  const handleRun = useCallback(() => {
+    dispatch({ type: "runSandcastle" });
+  }, [dispatch]);
+
+  const handleShare = useCallback(async () => {
+    shareToUrl(codeState.code, codeState.html);
+    const ok = await copyShareLink();
+    if (ok) {
+      setShareToast(true);
+      setTimeout(() => setShareToast(false), 2000);
+    }
+  }, [shareToUrl, copyShareLink, codeState.code, codeState.html]);
+
+  // --- Gallery 示例加载 ---
+  const handleSelectExample = useCallback(
+    (code: string, html: string) => {
+      dispatch({ type: "setAndRun", code, html });
+      setActiveView("editor");
+    },
+    [dispatch]
+  );
+
+  // --- 控制台状态 ---
+  const [consoleMessages, setConsoleMessages] = useState<ConsoleMessage[]>([]);
+
+  const appendConsole = useCallback((type: ConsoleMessageType, message: string) => {
+    setConsoleMessages(prev => [...prev, { type, message, id: crypto.randomUUID() }]);
+  }, []);
+
+  const resetConsole = useCallback((options?: { showMessage?: boolean }) => {
+    if (options?.showMessage) {
+      setConsoleMessages([{ type: "log", message: "控制台已清空", id: crypto.randomUUID() }]);
+    } else {
+      setConsoleMessages([]);
+    }
+  }, []);
+
+  const clearConsole = useCallback(() => {
+    setConsoleMessages([]);
+  }, []);
+
+  // --- 行号高亮 ---
+  const [highlightedLine, setHighlightedLine] = useState<number | null>(null);
+
+  const handleHighlightLine = useCallback((lineNumber: number) => {
+    setHighlightedLine(lineNumber);
+  }, []);
+
+  // --- 键盘快捷键 ---
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const isMod = e.ctrlKey || e.metaKey;
+
+      // Ctrl+Enter / Cmd+Enter：运行代码
+      if (isMod && e.key === "Enter") {
+        e.preventDefault();
+        handleRun();
+      }
+      // Ctrl+S / Cmd+S：分享链接
+      if (isMod && e.key === "s") {
+        e.preventDefault();
+        handleShare();
+      }
+      // Ctrl+L / Cmd+L：清空控制台
+      if (isMod && e.key === "l") {
+        e.preventDefault();
+        clearConsole();
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [handleRun, handleShare, clearConsole]);
 
   return (
     <div className="h-screen w-screen">
@@ -79,8 +171,11 @@ function App() {
                     <TabsTrigger value="html">HTML/CSS</TabsTrigger>
                   </div>
 
-                  <div>
-                    <Button onClick={() => dispatch({ type: "runSandcastle" })} variant="default" size="sm">
+                  <div className="flex items-center gap-1">
+                    <Button onClick={handleShare} variant="outline" size="sm" title="分享链接">
+                      <Icon icon="mdi:share-variant" className="text-sm" />
+                    </Button>
+                    <Button onClick={handleRun} variant="default" size="sm">
                       <Icon icon="mdi:play" className="text-sm" />
                       运行
                     </Button>
@@ -92,6 +187,7 @@ function App() {
                     <SandcastleEditor
                       language={activeTab}
                       value={activeTab === "javascript" ? codeState.code : codeState.html}
+                      highlightLine={activeTab === "javascript" ? highlightedLine : null}
                       onChange={val => {
                         dispatch(
                           activeTab === "javascript" ? { type: "setCode", code: val } : { type: "setHtml", html: val }
@@ -102,12 +198,7 @@ function App() {
                 </div>
               </Tabs>
             ) : (
-              <div className="flex items-center justify-center h-full bg-muted/30 text-muted-foreground border rounded-lg">
-                <div className="flex flex-col items-center gap-2">
-                  <Icon icon="mdi:view-grid-plus-outline" className="text-4xl opacity-50" />
-                  <p>画廊视图正在开发中...</p>
-                </div>
-              </div>
+              <Gallery onSelectExample={handleSelectExample} />
             )}
           </ErrorBoundary>
         </ResizablePanel>
@@ -124,9 +215,9 @@ function App() {
                   code={codeState.committedCode}
                   html={codeState.committedHtml}
                   runNumber={codeState.runNumber}
-                  highlightLine={() => {}}
-                  appendConsole={() => {}}
-                  resetConsole={() => {}}
+                  highlightLine={handleHighlightLine}
+                  appendConsole={appendConsole}
+                  resetConsole={resetConsole}
                 />
               </ErrorBoundary>
             </ResizablePanel>
@@ -135,11 +226,17 @@ function App() {
 
             {/* 控制台区域 */}
             <ResizablePanel minSize={30} defaultSize={100}>
-              <ConsoleMirror />
+              <ConsoleMirror messages={consoleMessages} onClear={clearConsole} />
             </ResizablePanel>
           </ResizablePanelGroup>
         </ResizablePanel>
         <SettingsDialog open={settingsOpen} onOpenChange={setSettingsOpen} />
+        {/* 分享成功提示 */}
+        {shareToast && (
+          <div className="fixed bottom-4 left-1/2 -translate-x-1/2 rounded-md bg-foreground text-background px-4 py-2 text-sm shadow-lg z-50">
+            链接已复制到剪贴板
+          </div>
+        )}
       </ResizablePanelGroup>
     </div>
   );

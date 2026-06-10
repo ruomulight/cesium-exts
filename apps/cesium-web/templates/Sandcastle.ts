@@ -9,6 +9,8 @@ declare global {
   interface Window {
     // 此变量由 bucket-client.js 的 init() 函数设置
     SANDCASTLE_OUTER_ORIGIN: string;
+    // Sandcastle 辅助工具对象，由本文件挂载到 window
+    Sandcastle: typeof Sandcastle;
   }
 }
 
@@ -259,5 +261,9 @@ const Sandcastle = {
     defaultAction = options[0].onselect;
   }
 };
+
+// 将 Sandcastle 挂载到 window，使 iframe 中动态注入的代码可直接访问全局 Sandcastle 对象
+// 而无需通过 import map 或 ESM import 语句
+window.Sandcastle = Sandcastle;
 
 export default Sandcastle;

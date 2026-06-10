@@ -16,16 +16,15 @@ export type SandcastleAction =
  */
 export const defaultJsCode = `import * as Cesium from "cesium";
 
-const viewer = new Cesium.Viewer("cesiumContainer");
+const viewer = new Cesium.Viewer("cesiumContainer", {
+  infoBox: false
+});
 `;
 
 /**
  * 默认 HTML 代码模板
  */
-export const defaultHtmlCode = `<style>
-  @import url(/templates/bucket.html);
-</style>
-<div id="cesiumContainer" class="fullSize"></div>
+export const defaultHtmlCode = `<div id="cesiumContainer" class="fullSize"></div>
 <div id="loadingOverlay"><h1>Loading...</h1></div>
 <div id="toolbar"></div>
 `;

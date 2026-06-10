@@ -1,24 +1,20 @@
-import { Editor, type EditorProps } from "@monaco-editor/react";
-import { memo } from "react";
+import { Editor, type EditorProps, type OnMount } from "@monaco-editor/react";
+import { memo, useCallback, useEffect, useRef } from "react";
+import type * as Monaco from "monaco-editor";
 import { useTheme } from "../../contexts/ThemeContext";
 
 /**
  * SandcastleEditor 组件的属性接口
  */
 interface SandcastleEditorProps {
-  /**
-   * 当前代码内容
-   */
+  /** 当前代码内容 */
   value?: string;
-  /**
-   * 编程语言
-   * @default "javascript"
-   */
+  /** 编程语言 @default "javascript" */
   language?: string;
-  /**
-   * 编辑内容发生变化时的回调
-   */
+  /** 编辑内容发生变化时的回调 */
   onChange?: (value: string) => void;
+  /** 需要高亮的行号，null 表示不高亮 */
+  highlightLine?: number | null;
 }
 
 /**
@@ -41,8 +37,46 @@ const DEFAULT_EDITOR_OPTIONS: EditorProps["options"] = {
  * Sandcastle 代码编辑器组件
  * 提供代码编辑功能，基于 Monaco Editor 封装
  */
-const SandcastleEditor = ({ value = "", language = "javascript", onChange }: SandcastleEditorProps) => {
+const SandcastleEditor = ({ value = "", language = "javascript", onChange, highlightLine }: SandcastleEditorProps) => {
   const { resolvedTheme } = useTheme();
+  const editorRef = useRef<Monaco.editor.IStandaloneCodeEditor | null>(null);
+  const decorationsRef = useRef<Monaco.editor.IEditorDecorationsCollection | null>(null);
+
+  const handleEditorMount: OnMount = useCallback(editor => {
+    editorRef.current = editor;
+  }, []);
+
+  // 高亮行号变化时更新 Monaco 装饰
+  useEffect(() => {
+    const editor = editorRef.current;
+    if (!editor) return;
+
+    // 清除旧装饰
+    if (decorationsRef.current) {
+      decorationsRef.current.clear();
+    }
+
+    if (highlightLine && highlightLine > 0) {
+      decorationsRef.current = editor.createDecorationsCollection([
+        {
+          range: {
+            startLineNumber: highlightLine,
+            startColumn: 1,
+            endLineNumber: highlightLine,
+            endColumn: 1
+          },
+          options: {
+            isWholeLine: true,
+            className: "highlighted-line-bg",
+            glyphMarginClassName: "highlighted-line-glyph"
+          }
+        }
+      ]);
+
+      // 滚动到高亮行
+      editor.revealLineInCenter(highlightLine);
+    }
+  }, [highlightLine]);
 
   /**
    * 处理编辑器内容变化
@@ -61,6 +95,7 @@ const SandcastleEditor = ({ value = "", language = "javascript", onChange }: San
           language={language}
           value={value}
           onChange={handleEditorChange}
+          onMount={handleEditorMount}
           options={DEFAULT_EDITOR_OPTIONS}
         />
       </div>

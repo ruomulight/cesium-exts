@@ -123,7 +123,6 @@ function Bucket({ code, html, runNumber, highlightLine, appendConsole, resetCons
         id="bucketFrame"
         src={bucketUrl}
         className="fullFrame"
-        sandbox="allow-scripts allow-same-origin"
         allowFullScreen
         loading="lazy"
       />

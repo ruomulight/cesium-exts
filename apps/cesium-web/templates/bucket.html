@@ -8,8 +8,8 @@
       content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no"
     />
     <title>Cesium Demo</title>
-    <link rel="stylesheet" href="__CESIUM_BASE_URL__/Widgets/widgets.css" vite-ignore />
-    <link rel="stylesheet" href="__CESIUM_BASE_URL__/Widgets/lighter.css" vite-ignore />
+    <link rel="stylesheet" href="__CESIUM_BASE_URL__Widgets/widgets.css" vite-ignore />
+    <link rel="stylesheet" href="__CESIUM_BASE_URL__Widgets/lighter.css" vite-ignore />
     <style>
       /*
       * Minimal styles copied from the bucket.css stylesheet to avoid FOUC and reflow
@@ -75,13 +75,40 @@
       .sandcastle-loading #toolbar {
         display: none;
       }
+
+      /* 参照官方 Sandcastle bucket.css，使 Cesium 视窗容器占满整个 iframe 视口 */
+      .fullSize {
+        position: absolute;
+        top: 0;
+        left: 0;
+        bottom: 0;
+        right: 0;
+      }
+
+      #toolbar {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 4px;
+        padding: 4px 8px;
+        z-index: 1;
+        background: oklch(22.52% 0.005 268.32 / 80%);
+        backdrop-filter: blur(4px);
+      }
     </style>
     <script>
       window.CESIUM_BASE_URL = "__CESIUM_BASE_URL__";
     </script>
   </head>
   <body class="sandcastle-loading">
-    <!-- 加载 bucket-client 模块，建立 iframe 与父窗口之间的 IframeBridge 通信 -->
+    <!-- Cesium 核心库：作为常规脚本加载，使 Cesium 全局可用（UMD 格式不可通过 import map 作为 ES Module 导入） -->
+    <script src="__CESIUM_BASE_URL__Cesium.js"></script>
+    <!-- Sandcastle 辅助工具：作为模块加载，设置 window.Sandcastle 全局 -->
+    <script src="./Sandcastle.ts" type="module"></script>
+    <!-- bucket-client 通信模块：建立 iframe 与父窗口之间的 IframeBridge 通信 -->
     <script src="../src/util/bucket-client.ts" type="module"></script>
   </body>
 </html>

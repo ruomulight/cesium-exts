@@ -4,11 +4,12 @@ import Pako from "pako";
  * 将用户代码嵌入 Sandcastle 运行模板。
  *
  * 执行以下处理：
- * 1. 若代码中缺少 `import * as Cesium from "cesium"`，自动补充。
- * 2. 若代码中缺少 `import Sandcastle from "Sandcastle"`，自动补充。
- * 3. 将补充的 import 语句追加到代码**末尾**（而非头部），
- *    使编辑器中显示的行号与实际执行行号保持一致。
- * 4. 在末尾注入 `Sandcastle.finishedLoading()` 及 `window.Cesium` 赋值。
+ * 1. 移除用户代码中的 `import * as Cesium from "cesium"` 语句，
+ *    因为 bucket.html 已通过常规 <script> 标签加载 Cesium.js，Cesium 作为全局对象可用。
+ * 2. 移除用户代码中的 `import Sandcastle from "Sandcastle"` 语句，
+ *    因为 bucket.html 已通过模块 <script> 标签加载 Sandcastle.ts 并挂载到 window。
+ * 3. 使用注释替换 import 语句以保持行号对齐，使编辑器中的行号与实际执行行号一致。
+ * 4. 在末尾注入 `Sandcastle.finishedLoading()`。
  *
  * @param code         - 用户编写的原始 TypeScript/JavaScript 代码。
  * @param addExtraLine - 若为 `true`，在模板最前面插入一个空行，
@@ -16,22 +17,22 @@ import Pako from "pako";
  * @returns 包裹了运行时样板代码的完整可执行字符串。
  */
 export function embedInSandcastleTemplate(code: string, addExtraLine: boolean) {
-  let imports = "";
+  // 移除用户代码中的 Cesium 和 Sandcastle import 语句
+  // 因为 bucket.html 已通过 <script> 标签加载了这两个全局对象
+  // 使用注释替换以保持行号对齐
+  const processedCode = code
+    .replace(
+      /^import\s+\*\s+as\s+Cesium\s+from\s+(['"])cesium\1;?\s*$/gm,
+      "// Cesium is loaded as global by bucket.html"
+    )
+    .replace(
+      /^import\s+Sandcastle\s+from\s+(['"])Sandcastle\1;?\s*$/gm,
+      "// Sandcastle is loaded as global by bucket.html"
+    );
 
-  if (!/^import\s+\*\s+as\s+Cesium\s+from\s+(['"])cesium\1;?$/m.test(code)) {
-    imports += `import * as Cesium from "cesium";\n`;
-  }
-  if (!/^import\s+Sandcastle\s+from\s+(['"])Sandcastle\1;?$/m.test(code)) {
-    imports += `import Sandcastle from "Sandcastle";\n`;
-  }
-
-  return `${addExtraLine ? "\n" : ""}${code}
-// import 会被提升，写在末尾可使编辑器中的行号与实际执行行号保持一致
-${imports}
+  return `${addExtraLine ? "\n" : ""}${processedCode}
 // 触发可能已配置的默认回调
 Sandcastle.finishedLoading();
-// 将 Cesium 挂载到 window，方便在 DevTools 中直接访问
-window.Cesium = Cesium;
 `;
 }
 
