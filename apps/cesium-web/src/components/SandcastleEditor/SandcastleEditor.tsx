@@ -2,6 +2,9 @@ import { Editor, type EditorProps, type OnMount } from "@monaco-editor/react";
 import { memo, useCallback, useEffect, useRef } from "react";
 import type * as Monaco from "monaco-editor";
 import { useTheme } from "../../contexts/ThemeContext";
+import prettier from "prettier/standalone";
+import parserBabel from "prettier/plugins/babel";
+import parserEstree from "prettier/plugins/estree";
 
 /**
  * SandcastleEditor 组件的属性接口
@@ -30,7 +33,11 @@ const DEFAULT_EDITOR_OPTIONS: EditorProps["options"] = {
   fontFamily: "JetBrains Mono, Menlo, Monaco, 'Courier New', monospace",
   fixedOverflowWidgets: true,
   roundedSelection: false,
-  renderLineHighlight: "all"
+  renderLineHighlight: "all",
+  formatOnPaste: true, // 粘贴时自动格式化
+  formatOnType: false // 输入时不自动格式化（避免干扰）
+  // 快捷键：Shift+Alt+F 格式化文档
+  // 快捷键：Ctrl+K Ctrl+F 格式化选中内容
 };
 
 /**
@@ -42,8 +49,49 @@ const SandcastleEditor = ({ value = "", language = "javascript", onChange, highl
   const editorRef = useRef<Monaco.editor.IStandaloneCodeEditor | null>(null);
   const decorationsRef = useRef<Monaco.editor.IEditorDecorationsCollection | null>(null);
 
-  const handleEditorMount: OnMount = useCallback(editor => {
+  const handleEditorMount: OnMount = useCallback((editor, monaco) => {
     editorRef.current = editor;
+
+    // 注册 Prettier 格式化提供程序
+    monaco.languages.registerDocumentFormattingEditProvider("javascript", {
+      async provideDocumentFormattingEdits(model) {
+        const text = model.getValue();
+        try {
+          const formatted = await prettier.format(text, {
+            parser: "babel",
+            plugins: [parserBabel, parserEstree],
+            semi: true,
+            singleQuote: false,
+            tabWidth: 2,
+            trailingComma: "none",
+            printWidth: 100,
+            arrowParens: "avoid"
+          });
+
+          return [
+            {
+              range: model.getFullModelRange(),
+              text: formatted
+            }
+          ];
+        } catch (error) {
+          console.error("格式化错误:", error);
+          return [];
+        }
+      }
+    });
+
+    // 添加格式化命令
+    editor.addAction({
+      id: "prettier-format",
+      label: "使用 Prettier 格式化",
+      keybindings: [monaco.KeyMod.Shift | monaco.KeyMod.Alt | monaco.KeyCode.KeyF],
+      contextMenuGroupId: "1_modification",
+      contextMenuOrder: 1.5,
+      run: async ed => {
+        await ed.getAction("editor.action.formatDocument")?.run();
+      }
+    });
   }, []);
 
   // 高亮行号变化时更新 Monaco 装饰

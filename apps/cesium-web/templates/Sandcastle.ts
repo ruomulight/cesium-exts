@@ -17,7 +17,7 @@ declare global {
 /**
  * 下拉菜单选项类型
  */
-type SelectOption = {
+export type SelectOption = {
   /** 选项显示的文本 */
   text: string;
   /** 选项的值 */
@@ -26,7 +26,12 @@ type SelectOption = {
   onselect: () => void;
 };
 
-const registered = new Map<any, number>();
+/**
+ * Sandcastle API 类型定义
+ */
+export type SandcastleAPI = typeof Sandcastle;
+
+const registered = new Map<unknown, number>();
 
 /**
  * 用于在 Sandcastle 中构建 UI 并与代码编辑器交互的辅助工具

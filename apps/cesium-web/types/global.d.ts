@@ -1,4 +1,4 @@
-import packageJson from "../package.json";
+import type packageJson from "../package.json";
 
 declare global {
   /**
@@ -26,6 +26,29 @@ declare global {
    * 用于 bucket-client.ts 中 {@link IframeBridge} 的来源校验与 Sandcastle 辅助函数的 postMessage 目标限定。
    */
   declare const __OUTER_ORIGIN__: string;
+
+  /**
+   * Window 接口扩展
+   */
+  interface Window {
+    /**
+     * Cesium 静态资源的基础 URL
+     * 在 bucket.html 的内联脚本中设置
+     */
+    CESIUM_BASE_URL: string;
+
+    /**
+     * 外部应用的 Origin 源
+     * 由 bucket-client.ts 的 init() 函数设置
+     */
+    SANDCASTLE_OUTER_ORIGIN: string;
+
+    /**
+     * Sandcastle 辅助工具对象
+     * 由 templates/Sandcastle.ts 挂载到 window
+     */
+    Sandcastle: import("../templates/Sandcastle").SandcastleAPI;
+  }
 }
 
 export {};

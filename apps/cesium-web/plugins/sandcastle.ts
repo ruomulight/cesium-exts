@@ -1,6 +1,7 @@
 import { mkdirSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { type Plugin, type ResolvedConfig } from "vite";
+import type { SandcastlePluginOptions } from "./types";
 
 /**
  * Sandcastle 专用 Vite 插件，参照官方 Cesium Sandcastle 的 cesiumPathReplace + createSandcastleConfig 实现。
@@ -13,9 +14,29 @@ import { type Plugin, type ResolvedConfig } from "vite";
  *    （bucket.html 已通过 <script> 标签加载 Cesium.js 和 Sandcastle.ts，
  *    两者均作为全局对象可用，无需 import map）
  *
- * @param cesiumBaseUrl  Cesium 静态资源的访问路径，应与 vite-cesium-plugin 的 cesiumBaseUrl 保持一致
+ * @param options 插件配置选项
+ * @returns Vite 插件对象
+ *
+ * @example
+ * ```ts
+ * // vite.config.ts
+ * import { sandcastlePlugin } from './plugins/sandcastle';
+ *
+ * export default defineConfig({
+ *   plugins: [
+ *     sandcastlePlugin({ cesiumBaseUrl: '/cesium/', debug: true })
+ *   ]
+ * });
+ * ```
  */
-export function sandcastlePlugin(cesiumBaseUrl: string = "/cesium/"): Plugin {
+export function sandcastlePlugin(options: SandcastlePluginOptions | string = {}): Plugin {
+  // 兼容旧版本的字符串参数
+  const config: SandcastlePluginOptions = typeof options === "string" ? { cesiumBaseUrl: options } : options;
+
+  let cesiumBaseUrl = config.cesiumBaseUrl ?? "/cesium/";
+  // 预留配置项，供后续扩展使用
+  // const debug = config.debug ?? false;
+  // const sandcastleOutDir = config.sandcastleOutDir ?? "templates";
   // 确保路径以 / 结尾
   if (!cesiumBaseUrl.endsWith("/")) {
     cesiumBaseUrl += "/";

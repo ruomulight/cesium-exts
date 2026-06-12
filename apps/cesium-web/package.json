@@ -7,7 +7,14 @@
     "dev": "node ./scripts/server.js && vite",
     "build": "vite build",
     "preview": "vite preview",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "type-check": "tsc --noEmit",
+    "format": "prettier --write \"src/**/*.{ts,tsx,js,jsx,json,css,md}\"",
+    "clean": "rimraf dist",
+    "test": "echo \"No tests yet\" && exit 0",
+    "check": "node scripts/check-quality.js",
+    "validate": "pnpm type-check && pnpm lint"
   },
   "dependencies": {
     "@monaco-editor/react": "^4.7.0",
@@ -40,6 +47,7 @@
     "eslint-plugin-react-hooks": "^7.0.1",
     "eslint-plugin-react-refresh": "^0.4.24",
     "globals": "catalog:",
+    "prettier": "^3.8.3",
     "sass": "^1.97.3",
     "shadcn": "^3.8.4",
     "terser": "^5.46.0",
