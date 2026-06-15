@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 
 import { Icon } from "@/components/icon";
 import { Button } from "@/components/ui/button";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { galleryItems, allLabels, type GalleryItem } from "./gallery-data";
 
 interface GalleryProps {
@@ -91,22 +92,24 @@ function Gallery({ onSelectExample }: GalleryProps) {
       </div>
 
       {/* 示例卡片网格 */}
-      <div className="flex-1 overflow-y-auto p-4">
-        {filteredItems.length === 0 ? (
-          <div className="flex h-full items-center justify-center text-muted-foreground">
-            <div className="flex flex-col items-center gap-2">
-              <Icon icon="mdi:magnify-close" className="text-3xl opacity-50" />
-              <p>未找到匹配的示例</p>
+      <ScrollArea className="h-0 min-h-0 flex-1">
+        <div className="p-4">
+          {filteredItems.length === 0 ? (
+            <div className="flex h-125 items-center justify-center text-muted-foreground">
+              <div className="flex flex-col items-center gap-2">
+                <Icon icon="mdi:magnify-close" className="text-3xl opacity-50" />
+                <p>未找到匹配的示例</p>
+              </div>
             </div>
-          </div>
-        ) : (
-          <div className="grid grid-cols-2 gap-3 lg:grid-cols-3">
-            {filteredItems.map(item => (
-              <GalleryCard key={item.name} item={item} onClick={() => onSelectExample(item.code, item.html)} />
-            ))}
-          </div>
-        )}
-      </div>
+          ) : (
+            <div className="flex flex-col gap-2">
+              {filteredItems.map(item => (
+                <GalleryCard key={item.name} item={item} onClick={() => onSelectExample(item.code, item.html)} />
+              ))}
+            </div>
+          )}
+        </div>
+      </ScrollArea>
     </div>
   );
 }
