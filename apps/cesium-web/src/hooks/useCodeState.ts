@@ -19,6 +19,10 @@ export const defaultJsCode = `import * as Cesium from "cesium";
 const viewer = new Cesium.Viewer("cesiumContainer", {
   infoBox: false
 });
+
+viewer.camera.setView({
+  destination: Cesium.Cartesian3.fromDegrees(106.738108, 33.006706,30000000)
+});
 `;
 
 /**
