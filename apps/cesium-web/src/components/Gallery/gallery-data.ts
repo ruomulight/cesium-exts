@@ -190,3 +190,15 @@ export async function loadAllLabels(): Promise<string[]> {
   }
   return _allLabels!;
 }
+
+/**
+ * 按目录名异步加载单个 Gallery 示例项。
+ * 用于通过 URL 的 `?id=<name>` 参数直接加载指定示例。
+ *
+ * @param name - 示例目录名，如 "web-map-service-wms"
+ * @returns 匹配的 GalleryItem，若未找到则返回 null
+ */
+export async function loadGalleryItemByName(name: string): Promise<GalleryItem | null> {
+  const items = await loadGalleryItems();
+  return items.find(item => item.name === name) ?? null;
+}

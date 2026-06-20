@@ -6,8 +6,8 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { loadGalleryItems, loadAllLabels, type GalleryItem } from "./gallery-data";
 
 interface GalleryProps {
-  /** 选择示例后的回调，参数为 code 和 html */
-  onSelectExample: (code: string, html: string) => void;
+  /** 选择示例后的回调，参数为 name、code、html */
+  onSelectExample: (name: string, code: string, html: string) => void;
 }
 
 /**
@@ -131,7 +131,11 @@ function Gallery({ onSelectExample }: GalleryProps) {
           ) : (
             <div className="flex flex-col gap-2">
               {filteredItems.map(item => (
-                <GalleryCard key={item.name} item={item} onClick={() => onSelectExample(item.code, item.html)} />
+                <GalleryCard
+                  key={item.name}
+                  item={item}
+                  onClick={() => onSelectExample(item.name, item.code, item.html)}
+                />
               ))}
             </div>
           )}

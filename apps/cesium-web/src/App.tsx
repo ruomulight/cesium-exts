@@ -11,6 +11,7 @@ import ConsoleMirror, {
   type ConsoleMessageType
 } from "@/components/ConsoleMirror/ConsoleMirror.tsx";
 import Gallery from "@/components/Gallery/Gallery";
+import { loadGalleryItemByName } from "@/components/Gallery/gallery-data";
 import { useCodeState } from "@/hooks/useCodeState";
 import { useUrlSharing } from "@/hooks/useUrlSharing";
 import { ErrorBoundary } from "@/components/ErrorBoundary/ErrorBoundary";
@@ -24,11 +25,27 @@ function App() {
   const editorRef = useRef<SandcastleEditorHandle>(null);
 
   // --- URL 分享（必须在 activeView 之前调用，以便派生初始视图） ---
-  const { initialData, shareToUrl, copyShareLink } = useUrlSharing();
+  const { galleryId, initialData, setGalleryId, shareToUrl, copyShareLink } = useUrlSharing();
 
-  const [activeView, setActiveView] = useState<"editor" | "gallery">(initialData ? "editor" : "gallery");
+  const [activeView, setActiveView] = useState<"editor" | "gallery">(initialData || galleryId ? "editor" : "gallery");
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [shareToast, setShareToast] = useState(false);
+
+  // 从 URL `?id=<name>` 加载 gallery 示例
+  useEffect(() => {
+    if (galleryId && !initialData) {
+      let cancelled = false;
+      (async () => {
+        const item = await loadGalleryItemByName(galleryId);
+        if (!cancelled && item) {
+          dispatch({ type: "setAndRun", code: item.code, html: item.html });
+        }
+      })();
+      return () => {
+        cancelled = true;
+      };
+    }
+  }, [galleryId, initialData, dispatch]);
 
   // 从 URL hash 加载初始数据：dispatch 是副作用，放在 effect 中
   useEffect(() => {
@@ -53,11 +70,12 @@ function App() {
 
   // --- Gallery 示例加载 ---
   const handleSelectExample = useCallback(
-    (code: string, html: string) => {
+    (name: string, code: string, html: string) => {
+      setGalleryId(name); // 同步 URL：?id=<name>
       dispatch({ type: "setAndRun", code, html });
       setActiveView("editor");
     },
-    [dispatch]
+    [dispatch, setGalleryId]
   );
 
   // --- 控制台状态 ---
