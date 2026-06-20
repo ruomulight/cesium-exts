@@ -20,6 +20,7 @@
     "@monaco-editor/react": "^4.7.0",
     "@tailwindcss/vite": "^4.1.18",
     "cesium": "catalog:",
+    "cesium-exts": "workspace:*",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "dompurify": "^3.3.1",
