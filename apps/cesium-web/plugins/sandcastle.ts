@@ -34,9 +34,7 @@ export function sandcastlePlugin(options: SandcastlePluginOptions | string = {})
   const config: SandcastlePluginOptions = typeof options === "string" ? { cesiumBaseUrl: options } : options;
 
   let cesiumBaseUrl = config.cesiumBaseUrl ?? "/cesium/";
-  // 预留配置项，供后续扩展使用
-  // const debug = config.debug ?? false;
-  // const sandcastleOutDir = config.sandcastleOutDir ?? "templates";
+  const sandcastleOutDirName = config.sandcastleOutDir ?? "templates";
   // 确保路径以 / 结尾
   if (!cesiumBaseUrl.endsWith("/")) {
     cesiumBaseUrl += "/";
@@ -87,7 +85,7 @@ export function sandcastlePlugin(options: SandcastlePluginOptions | string = {})
       const root = resolvedConfig.root;
       const outDir = resolvedConfig.build.outDir;
       const sandcastleSrc = resolve(root, "templates/Sandcastle.ts");
-      const sandcastleOutDir = resolve(outDir, "templates");
+      const sandcastleOutDir = resolve(outDir, sandcastleOutDirName);
       const sandcastleOut = resolve(sandcastleOutDir, "Sandcastle.js");
 
       // 确保输出目录存在
@@ -126,6 +124,7 @@ export function sandcastlePlugin(options: SandcastlePluginOptions | string = {})
           " * 由 sandcastlePlugin 在构建时自动生成",
           " */",
           "declare const Sandcastle: {",
+          "  _registered: Map<any, number>;",
           "  reset(): void;",
           "  declare(key: any): void;",
           "  highlight(key: any): void;",

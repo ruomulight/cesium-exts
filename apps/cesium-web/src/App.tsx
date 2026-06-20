@@ -1,11 +1,11 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
 
 import { Button } from "@/components/ui/button.tsx";
 import { Icon } from "@/components/icon";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import Bucket from "@/components/Bucket/Bucket.tsx";
-import SandcastleEditor from "@/components/SandcastleEditor/SandcastleEditor";
+import SandcastleEditor, { type SandcastleEditorHandle } from "@/components/SandcastleEditor/SandcastleEditor";
 import ConsoleMirror, {
   type ConsoleMessage,
   type ConsoleMessageType
@@ -21,6 +21,7 @@ function App() {
   const { resolvedTheme, setTheme } = useTheme();
   const [codeState, dispatch] = useCodeState();
   const [activeTab, setActiveTab] = useState("javascript");
+  const editorRef = useRef<SandcastleEditorHandle>(null);
 
   // --- URL 分享（必须在 activeView 之前调用，以便派生初始视图） ---
   const { initialData, shareToUrl, copyShareLink } = useUrlSharing();
@@ -63,7 +64,14 @@ function App() {
   const [consoleMessages, setConsoleMessages] = useState<ConsoleMessage[]>([]);
 
   const appendConsole = useCallback((type: ConsoleMessageType, message: string) => {
-    setConsoleMessages(prev => [...prev, { type, message, id: crypto.randomUUID() }]);
+    setConsoleMessages(prev => {
+      const next = [...prev, { type, message, id: crypto.randomUUID() }];
+      // 限定最多保留 1000 条消息，防止无限增长导致内存溢出
+      if (next.length > 1000) {
+        return next.slice(next.length - 1000);
+      }
+      return next;
+    });
   }, []);
 
   const resetConsole = useCallback((options?: { showMessage?: boolean }) => {
@@ -172,6 +180,24 @@ function App() {
                   </div>
 
                   <div className="flex items-center gap-1">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-7 w-7"
+                      title="撤销 (Ctrl+Z)"
+                      onClick={() => editorRef.current?.undo()}
+                    >
+                      <Icon icon="mdi:undo" className="text-sm" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-7 w-7"
+                      title="重做 (Ctrl+Shift+Z)"
+                      onClick={() => editorRef.current?.redo()}
+                    >
+                      <Icon icon="mdi:redo" className="text-sm" />
+                    </Button>
                     <Button onClick={handleShare} variant="outline" size="sm" title="分享链接">
                       <Icon icon="mdi:share-variant" className="text-sm" />
                     </Button>
@@ -185,6 +211,7 @@ function App() {
                 <div className="flex-1 mt-0">
                   <div className="h-full flex flex-col">
                     <SandcastleEditor
+                      ref={editorRef}
                       language={activeTab}
                       value={activeTab === "javascript" ? codeState.code : codeState.html}
                       highlightLine={activeTab === "javascript" ? highlightedLine : null}

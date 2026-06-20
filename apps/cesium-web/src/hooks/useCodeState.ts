@@ -5,7 +5,6 @@ import { useReducer, type ActionDispatch } from "react";
  */
 export type SandcastleAction =
   | { type: "reset" } // 重置为初始状态
-  | { type: "resetDirty" } // 重置脏标记
   | { type: "setCode"; code: string } // 设置当前 Javascript 代码
   | { type: "setHtml"; html: string } // 设置当前 HTML 内容
   | { type: "runSandcastle" } // 提交并运行当前代码
@@ -42,7 +41,6 @@ type CodeState = {
   committedCode: string; // 已提交执行的 Javascript 代码
   committedHtml: string; // 已提交执行的 HTML 内容
   runNumber: number; // 运行计数器，每次执行时递增以触发 iframe 刷新
-  dirty: boolean; // 是否存在未运行的修改（脏标记）
 };
 
 /**
@@ -53,8 +51,7 @@ const initialState: CodeState = {
   html: defaultHtmlCode,
   committedCode: defaultJsCode,
   committedHtml: defaultHtmlCode,
-  runNumber: 1,
-  dirty: false
+  runNumber: 1
 };
 
 /**
@@ -71,15 +68,13 @@ function reducer(state: CodeState, action: SandcastleAction): CodeState {
     case "setCode":
       return {
         ...state,
-        code: action.code,
-        dirty: true
+        code: action.code
       };
 
     case "setHtml":
       return {
         ...state,
-        html: action.html,
-        dirty: true
+        html: action.html
       };
 
     case "runSandcastle":
@@ -87,8 +82,7 @@ function reducer(state: CodeState, action: SandcastleAction): CodeState {
         ...state,
         committedCode: state.code,
         committedHtml: state.html,
-        runNumber: state.runNumber + 1,
-        dirty: false // 提交后清除脏标记
+        runNumber: state.runNumber + 1
       };
 
     case "setAndRun":
@@ -97,14 +91,7 @@ function reducer(state: CodeState, action: SandcastleAction): CodeState {
         html: action.html ?? state.html,
         committedCode: action.code ?? state.code,
         committedHtml: action.html ?? state.html,
-        runNumber: state.runNumber + 1,
-        dirty: false
-      };
-
-    case "resetDirty":
-      return {
-        ...state,
-        dirty: false
+        runNumber: state.runNumber + 1
       };
 
     default:

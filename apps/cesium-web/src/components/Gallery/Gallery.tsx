@@ -1,9 +1,9 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { Icon } from "@/components/icon";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { galleryItems, allLabels, type GalleryItem } from "./gallery-data";
+import { loadGalleryItems, loadAllLabels, type GalleryItem } from "./gallery-data";
 
 interface GalleryProps {
   /** 选择示例后的回调，参数为 code 和 html */
@@ -17,11 +17,31 @@ interface GalleryProps {
 function Gallery({ onSelectExample }: GalleryProps) {
   const [search, setSearch] = useState("");
   const [activeLabel, setActiveLabel] = useState<string | null>(null);
+  const [items, setItems] = useState<GalleryItem[]>([]);
+  const [labels, setLabels] = useState<string[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  // 首次挂载时异步加载 gallery 数据
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      setLoading(true);
+      const [loadedItems, loadedLabels] = await Promise.all([loadGalleryItems(), loadAllLabels()]);
+      if (!cancelled) {
+        setItems(loadedItems);
+        setLabels(loadedLabels);
+        setLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   // 根据搜索词和标签过滤示例列表
   const filteredItems = useMemo(() => {
     const lowerSearch = search.toLowerCase();
-    return galleryItems.filter(item => {
+    return items.filter(item => {
       // 标签过滤
       if (activeLabel && !item.labels.includes(activeLabel)) {
         return false;
@@ -36,7 +56,7 @@ function Gallery({ onSelectExample }: GalleryProps) {
       }
       return true;
     });
-  }, [search, activeLabel]);
+  }, [search, activeLabel, items]);
 
   return (
     <div className="flex h-full flex-col overflow-hidden">
@@ -66,7 +86,7 @@ function Gallery({ onSelectExample }: GalleryProps) {
         </div>
 
         {/* 标签过滤按钮 */}
-        {allLabels.length > 0 && (
+        {labels.length > 0 && (
           <div className="flex flex-wrap gap-1.5">
             <Button
               variant={activeLabel === null ? "secondary" : "outline"}
@@ -76,7 +96,7 @@ function Gallery({ onSelectExample }: GalleryProps) {
             >
               全部
             </Button>
-            {allLabels.map(label => (
+            {labels.map(label => (
               <Button
                 key={label}
                 variant={activeLabel === label ? "secondary" : "outline"}
@@ -94,7 +114,14 @@ function Gallery({ onSelectExample }: GalleryProps) {
       {/* 示例卡片网格 */}
       <ScrollArea className="h-0 min-h-0 flex-1">
         <div className="p-4">
-          {filteredItems.length === 0 ? (
+          {loading ? (
+            <div className="flex h-125 items-center justify-center text-muted-foreground">
+              <div className="flex flex-col items-center gap-2">
+                <Icon icon="mdi:loading" className="animate-spin text-2xl" />
+                <p>加载示例中...</p>
+              </div>
+            </div>
+          ) : filteredItems.length === 0 ? (
             <div className="flex h-125 items-center justify-center text-muted-foreground">
               <div className="flex flex-col items-center gap-2">
                 <Icon icon="mdi:magnify-close" className="text-3xl opacity-50" />

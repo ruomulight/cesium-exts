@@ -9,12 +9,6 @@ export interface SandcastlePluginOptions {
   cesiumBaseUrl?: string;
 
   /**
-   * 是否在开发模式下启用调试信息
-   * @default false
-   */
-  debug?: boolean;
-
-  /**
    * 自定义 Sandcastle.ts 的输出路径（相对于 outDir）
    * @default "templates"
    */

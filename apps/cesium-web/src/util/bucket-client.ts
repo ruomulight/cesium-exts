@@ -65,6 +65,22 @@ function initPage() {
 
   const bridge: BridgeToApp = new IframeBridge(OUTER_ORIGIN, window.parent);
 
+  // 覆盖 Sandcastle.highlight，使其通过 IframeBridge 发送高亮消息，
+  // 而非直接调用 window.parent.postMessage()，确保消息经过统一封装和 origin 校验
+  if (window.Sandcastle) {
+    const registered = (window.Sandcastle as unknown as Record<string, unknown>)._registered as Map<unknown, number>;
+    window.Sandcastle.highlight = function (key: unknown) {
+      if (key !== undefined) {
+        const lineNumber = registered.get(key) ?? registered.get((key as { primitive?: unknown }).primitive);
+        if (lineNumber !== undefined) {
+          bridge.sendMessage({ type: "highlight", highlight: lineNumber });
+          return;
+        }
+      }
+      bridge.sendMessage({ type: "highlight", highlight: 0 });
+    };
+  }
+
   wrapConsoleFunctions(bridge);
 
   bridge.addEventListener(message => {

@@ -9,7 +9,22 @@ function parseSimpleYaml(text: string): Record<string, unknown> {
   let currentArray: string[] = [];
   let inArray = false;
 
-  for (const line of lines) {
+  for (let line of lines) {
+    // 去除行内注释（# 及之后的内容），但跳过引号内的 #
+    const commentIndex = line.indexOf("#");
+    if (commentIndex >= 0) {
+      const beforeComment = line.substring(0, commentIndex);
+      // 简单启发式：如果 # 前面有奇数个引号，说明 # 在引号内
+      const doubleQuoteCount = (beforeComment.match(/"/g) || []).length;
+      const singleQuoteCount = (beforeComment.match(/'/g) || []).length;
+      if (doubleQuoteCount % 2 === 0 && singleQuoteCount % 2 === 0) {
+        line = beforeComment;
+      }
+    }
+
+    line = line.trim();
+    if (!line) continue; // 跳过空行和纯注释行
+
     if (/^\s+-\s/.test(line)) {
       // 数组项，如 "  - Imagery"
       currentArray.push(line.replace(/^\s+-\s/, "").trim());
@@ -24,7 +39,12 @@ function parseSimpleYaml(text: string): Record<string, unknown> {
 
       const colonIndex = line.indexOf(":");
       currentKey = line.slice(0, colonIndex).trim();
-      const value = line.slice(colonIndex + 1).trim();
+      let value = line.slice(colonIndex + 1).trim();
+
+      // 剥离首尾引号（单引号或双引号）
+      if ((value.startsWith('"') && value.endsWith('"')) || (value.startsWith("'") && value.endsWith("'"))) {
+        value = value.slice(1, -1);
+      }
 
       if (value) {
         result[currentKey] = value;
@@ -68,25 +88,26 @@ function stripBucketCssImport(html: string): string {
 }
 
 // 使用 import.meta.glob 批量导入 gallery 目录下的所有资源
+// eager: false 延迟加载，避免首屏加载所有示例的代码和 HTML 内容
 // ?raw 后缀以原始文本形式导入，?url 后缀以 URL 形式导入
 const yamlModules = import.meta.glob<{ default: string }>("../../../gallery/*/sandcastle.yaml", {
   query: "?raw",
-  eager: true
+  eager: false
 });
 
 const codeModules = import.meta.glob<{ default: string }>("../../../gallery/*/main.js", {
   query: "?raw",
-  eager: true
+  eager: false
 });
 
 const htmlModules = import.meta.glob<{ default: string }>("../../../gallery/*/index.html", {
   query: "?raw",
-  eager: true
+  eager: false
 });
 
 const thumbnailModules = import.meta.glob<{ default: string }>("../../../gallery/*/thumbnail.jpg", {
   query: "?url",
-  eager: true
+  eager: false
 });
 
 /**
@@ -99,14 +120,26 @@ function extractName(path: string): string {
   return segments[segments.length - 2];
 }
 
-/** 所有已加载的 gallery 示例项，按目录名字母排序 */
-export const galleryItems: GalleryItem[] = (() => {
-  const items: GalleryItem[] = [];
+/** 已加载的 gallery 示例项缓存 */
+let _galleryItems: GalleryItem[] | null = null;
+/** 已提取的分类标签缓存 */
+let _allLabels: string[] | null = null;
 
-  // 以 yamlModules 的键为基础遍历所有示例目录
-  for (const path of Object.keys(yamlModules)) {
+/**
+ * 异步加载所有 Gallery 示例项。
+ * 首次调用时动态导入所有 sandcastle.yaml，并匹配对应的代码/HTML/缩略图模块。
+ * 结果会缓存，后续调用直接返回缓存值。
+ */
+export async function loadGalleryItems(): Promise<GalleryItem[]> {
+  if (_galleryItems) return _galleryItems;
+
+  const items: GalleryItem[] = [];
+  const yamlPaths = Object.keys(yamlModules);
+
+  for (const path of yamlPaths) {
     const name = extractName(path);
-    const yamlText = yamlModules[path]?.default ?? "";
+    const yamlMod = await yamlModules[path]();
+    const yamlText = yamlMod.default ?? "";
     const metadata = parseSimpleYaml(yamlText);
 
     // 匹配对应的代码和 HTML 模块
@@ -114,19 +147,46 @@ export const galleryItems: GalleryItem[] = (() => {
     const htmlKey = Object.keys(htmlModules).find(k => extractName(k) === name);
     const thumbKey = Object.keys(thumbnailModules).find(k => extractName(k) === name);
 
+    let code = "";
+    let html = "";
+    let thumbnailUrl = "";
+
+    if (codeKey) {
+      const codeMod = await codeModules[codeKey]();
+      code = codeMod.default ?? "";
+    }
+    if (htmlKey) {
+      const htmlMod = await htmlModules[htmlKey]();
+      html = stripBucketCssImport(htmlMod.default ?? "");
+    }
+    if (thumbKey) {
+      const thumbMod = await thumbnailModules[thumbKey]();
+      thumbnailUrl = thumbMod.default ?? "";
+    }
+
     items.push({
       name,
       title: (metadata.title as string) ?? name,
       description: (metadata.description as string) ?? "",
       labels: Array.isArray(metadata.labels) ? (metadata.labels as string[]) : [],
-      code: codeKey ? (codeModules[codeKey]?.default ?? "") : "",
-      html: htmlKey ? stripBucketCssImport(htmlModules[htmlKey]?.default ?? "") : "",
-      thumbnailUrl: thumbKey ? (thumbnailModules[thumbKey]?.default ?? "") : ""
+      code,
+      html,
+      thumbnailUrl
     });
   }
 
-  return items.sort((a, b) => a.title.localeCompare(b.title));
-})();
+  _galleryItems = items.sort((a, b) => a.title.localeCompare(b.title));
+  _allLabels = [...new Set(_galleryItems.flatMap(item => item.labels))].sort();
+  return _galleryItems;
+}
 
-/** 所有示例的分类标签集合（去重排序） */
-export const allLabels: string[] = [...new Set(galleryItems.flatMap(item => item.labels))].sort();
+/**
+ * 异步获取所有分类标签（去重排序）。
+ * 首次调用时会自动加载 gallery 数据。
+ */
+export async function loadAllLabels(): Promise<string[]> {
+  if (!_allLabels) {
+    await loadGalleryItems();
+  }
+  return _allLabels!;
+}

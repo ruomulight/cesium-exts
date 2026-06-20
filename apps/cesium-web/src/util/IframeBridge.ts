@@ -177,6 +177,7 @@ export class IframeBridge<SendMessageType = MessageWithType, RecieveMessageType 
   removeEventListener() {
     if (this.#windowListener) {
       window.removeEventListener("message", this.#windowListener);
+      this.#windowListener = undefined;
     }
   }
 }

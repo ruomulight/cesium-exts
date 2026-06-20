@@ -76,7 +76,8 @@ export function makeCompressedBase64String(data: SandcastleSaveData) {
   let base64String = btoa(String.fromCharCode(...pakoData));
   base64String = base64String.replace(/=+$/, ""); // 去除 Base64 末尾填充字符
 
-  return base64String;
+  // 添加版本前缀，以便未来改变编码格式时能够被识别
+  return `1:${base64String}`;
 }
 
 /**
@@ -101,6 +102,11 @@ export function makeCompressedBase64String(data: SandcastleSaveData) {
 export function decodeBase64Data(base64String: string): SandcastleSaveData {
   // 数据以如下格式存储于 URL hash：
   // 对 JSON 数组进行 raw DEFLATE 压缩后再做 Base64 编码，索引 0 为 code，索引 1 为 html
+
+  // 剥离版本前缀（当前为 "1:"），旧版链接无此前缀，向后兼容
+  if (base64String.startsWith("1:")) {
+    base64String = base64String.substring(2);
+  }
 
   // 补全编码时去除的末尾填充字符
   while (base64String.length % 4 !== 0) {

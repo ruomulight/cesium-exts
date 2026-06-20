@@ -1,3 +1,7 @@
+// ============================================================================
+// Section 1: 核心状态与初始化
+// ============================================================================
+
 let defaultAction: (() => void) | undefined;
 let bucket = window.location.href;
 const pos = bucket.lastIndexOf("/");
@@ -33,10 +37,19 @@ export type SandcastleAPI = typeof Sandcastle;
 
 const registered = new Map<unknown, number>();
 
+// ============================================================================
+// Section 2: Sandcastle API（核心逻辑 + UI 工厂方法）
+// ============================================================================
+
 /**
  * 用于在 Sandcastle 中构建 UI 并与代码编辑器交互的辅助工具
  */
 const Sandcastle = {
+  /**
+   * 内部注册表，暴露给 bucket-client.ts 以便统一消息路由。
+   * 存储 key → lineNumber 的映射，供 highlight() 查找行号。
+   */
+  _registered: registered,
   /**
    * 在首次加载以及由其他辅助工具设置的选项发生更改时被调用。
    * 默认情况下为空操作，需要时可使用自定义重置逻辑进行重写。
@@ -266,6 +279,10 @@ const Sandcastle = {
     defaultAction = options[0].onselect;
   }
 };
+
+// ============================================================================
+// Section 3: 全局导出（挂载到 window + ESM export）
+// ============================================================================
 
 // 将 Sandcastle 挂载到 window，使 iframe 中动态注入的代码可直接访问全局 Sandcastle 对象
 // 而无需通过 import map 或 ESM import 语句
