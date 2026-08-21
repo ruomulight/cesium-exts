@@ -1,0 +1,49 @@
+{
+  "name": "cesium-exts",
+  "version": "1.0.0",
+  "description": "",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "turbo build",
+    "check-types": "turbo check-types",
+    "dev": "turbo dev",
+    "lint": "turbo lint",
+    "lint:fix": "turbo lint -- --fix",
+    "format": "prettier . --write",
+    "format:check": "prettier . --check",
+    "test": "turbo test",
+    "test:watch": "turbo test -- --watch",
+    "clean": "turbo clean && rimraf node_modules/.cache .turbo",
+    "changeset": "changeset",
+    "version": "changeset version",
+    "release": "turbo build && changeset publish",
+    "prepare": "husky || true"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "lint-staged": {
+    "*.{js,ts,mjs,cjs,json,tsx,css,less,scss,vue,html,md}": [
+      "prettier --write"
+    ],
+    "*.{js,ts,mjs,cjs,tsx}": [
+      "node scripts/lint-staged-eslint.mjs"
+    ]
+  },
+  "devDependencies": {
+    "@changesets/cli": "catalog:tooling",
+    "@repo/config-prettier": "workspace:^",
+    "husky": "catalog:tooling",
+    "lint-staged": "catalog:tooling",
+    "prettier": "catalog:tooling",
+    "rimraf": "catalog:tooling",
+    "turbo": "catalog:tooling"
+  },
+  "packageManager": "pnpm@10.10.0",
+  "engines": {
+    "node": ">=22.22.1",
+    "npm": ">=10.9.3",
+    "pnpm": ">=10.10.0"
+  }
+}

@@ -1,0 +1,11 @@
+node_modules
+.pnpm-store
+.turbo
+coverage
+dist
+build
+.vite
+.next
+*.tsbuildinfo
+*.log
+pnpm-lock.yaml

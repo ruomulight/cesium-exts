@@ -1,0 +1,51 @@
+{
+  "$schema": "https://turbo.build/schema.json",
+  "globalDependencies": [
+    ".env",
+    "prettier.config.ts",
+    "tooling/config-eslint/src/**",
+    "tooling/config-prettier/src/**",
+    "tooling/config-typescript/*.json"
+  ],
+  "globalEnv": ["NODE_ENV", "CI"],
+  "envMode": "strict",
+  "tasks": {
+    "build": {
+      "description": "Build all packages and apps",
+      "dependsOn": ["^build"],
+      "outputs": ["dist/**", ".next/**", "!.next/cache/**"],
+      "inputs": ["$TURBO_DEFAULT$", "gulpfile.js", "tsconfig.json", "tsconfig.*.json", "vite.config.*"]
+    },
+    "check-types": {
+      "description": "Type-check all packages with tsc --noEmit",
+      "dependsOn": ["^check-types"],
+      "outputs": [],
+      "inputs": ["$TURBO_DEFAULT$", "tsconfig.json", "tsconfig.*.json"]
+    },
+    "test": {
+      "description": "Run tests across all packages",
+      "dependsOn": ["build"],
+      "outputs": ["coverage/**"],
+      "inputs": ["$TURBO_DEFAULT$", "vitest.config.ts", "src/**/*.test.ts", "src/**/*.spec.ts", "test/**"]
+    },
+    "lint": {
+      "description": "Lint all packages with ESLint",
+      "outputs": [],
+      "inputs": ["$TURBO_DEFAULT$", "eslint.config.*"]
+    },
+    "format": {
+      "description": "Format all files with Prettier",
+      "outputs": []
+    },
+    "dev": {
+      "description": "Start development servers",
+      "cache": false,
+      "persistent": true,
+      "interruptible": true
+    },
+    "clean": {
+      "description": "Remove build artifacts",
+      "cache": false
+    }
+  }
+}

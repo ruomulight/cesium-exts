@@ -1,0 +1,44 @@
+{
+  "name": "vite-cesium-plugin",
+  "version": "1.0.0",
+  "description": "Vite 插件，用于在 Vite 项目中无缝集成 CesiumJS",
+  "type": "module",
+  "main": "src/index.ts",
+  "module": "src/index.ts",
+  "types": "src/index.ts",
+  "exports": {
+    ".": {
+      "import": "./src/index.ts",
+      "types": "./src/index.ts"
+    }
+  },
+  "scripts": {
+    "check-types": "tsc -p tsconfig.json --noEmit",
+    "lint": "eslint ."
+  },
+  "keywords": [
+    "vite",
+    "plugin",
+    "template"
+  ],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "fs-extra": "catalog:cesium-plugin",
+    "rollup-plugin-external-globals": "catalog:cesium-plugin",
+    "serve-static": "catalog:cesium-plugin"
+  },
+  "devDependencies": {
+    "@repo/config-eslint": "workspace:*",
+    "@repo/config-typescript": "workspace:*",
+    "@types/fs-extra": "catalog:cesium-plugin",
+    "@types/node": "catalog:tooling",
+    "@types/serve-static": "catalog:cesium-plugin",
+    "eslint": "catalog:tooling",
+    "typescript": "catalog:tooling"
+  },
+  "peerDependencies": {
+    "cesium": "catalog:cesium",
+    "vite": "catalog:tooling"
+  }
+}

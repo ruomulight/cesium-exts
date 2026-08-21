@@ -1,0 +1,38 @@
+{
+  "name": "cesium-exts",
+  "version": "1.0.0",
+  "description": "Cesium-exts 扩展引擎核心库,基于 cesium v1.140.1开发",
+  "type": "module",
+  "main": "index.ts",
+  "module": "index.ts",
+  "files": [
+    "dist",
+    "index.ts",
+    "Source",
+    "modules",
+    "Utils",
+    "types"
+  ],
+  "scripts": {
+    "build": "gulp build",
+    "lint": "eslint ."
+  },
+  "keywords": [
+    "cesium",
+    "engine",
+    "3d"
+  ],
+  "author": "ruomulight",
+  "license": "ISC",
+  "peerDependencies": {
+    "cesium": "catalog:cesium"
+  },
+  "devDependencies": {
+    "@repo/config-eslint": "workspace:*",
+    "esbuild": "catalog:tooling",
+    "eslint": "catalog:tooling",
+    "gulp": "catalog:tooling",
+    "typescript": "catalog:tooling",
+    "typescript-eslint": "catalog:eslint"
+  }
+}

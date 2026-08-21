@@ -1,0 +1,36 @@
+{
+  "name": "vite-cesium-sandcastle",
+  "version": "1.0.0",
+  "description": "Vite 插件：在 HTML 中替换 Cesium 基础路径占位符（Sandcastle 模板兼容）",
+  "type": "module",
+  "main": "src/index.ts",
+  "module": "src/index.ts",
+  "types": "src/index.ts",
+  "exports": {
+    ".": {
+      "import": "./src/index.ts",
+      "types": "./src/index.ts"
+    }
+  },
+  "scripts": {
+    "lint": "eslint .",
+    "check-types": "tsc -p tsconfig.json --noEmit"
+  },
+  "keywords": [
+    "vite",
+    "plugin",
+    "cesium",
+    "sandcastle"
+  ],
+  "license": "ISC",
+  "devDependencies": {
+    "@repo/config-typescript": "workspace:*",
+    "@repo/config-eslint": "workspace:*",
+    "@types/node": "catalog:tooling",
+    "eslint": "catalog:tooling",
+    "typescript": "catalog:tooling"
+  },
+  "peerDependencies": {
+    "vite": "catalog:tooling"
+  }
+}

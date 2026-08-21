@@ -1,0 +1,28 @@
+{
+  "name": "@repo/config-eslint",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./base": "./src/base.ts",
+    "./react": "./src/react.ts"
+  },
+  "scripts": {
+    "clean": "rimraf dist/"
+  },
+  "dependencies": {
+    "@eslint/js": "catalog:eslint",
+    "eslint-config-prettier": "catalog:eslint",
+    "eslint-plugin-perfectionist": "catalog:eslint",
+    "eslint-plugin-react-hooks": "catalog:eslint",
+    "eslint-plugin-react-refresh": "catalog:eslint",
+    "globals": "catalog:eslint",
+    "typescript-eslint": "catalog:eslint"
+  },
+  "devDependencies": {
+    "@repo/config-typescript": "workspace:*",
+    "@types/node": "catalog:tooling",
+    "eslint": "catalog:tooling",
+    "typescript": "catalog:tooling"
+  }
+}

@@ -1,0 +1,36 @@
+{
+  "name": "vite-cesium-exts-dev",
+  "version": "1.0.0",
+  "description": "Vite 插件：为 cesium-exts 提供开发模式下的内存构建（GLSL 着色器、Web Worker）",
+  "type": "module",
+  "main": "src/index.ts",
+  "module": "src/index.ts",
+  "types": "src/index.ts",
+  "exports": {
+    ".": {
+      "import": "./src/index.ts",
+      "types": "./src/index.ts"
+    }
+  },
+  "scripts": {
+    "lint": "eslint .",
+    "check-types": "tsc -p tsconfig.json --noEmit"
+  },
+  "keywords": [
+    "vite",
+    "plugin",
+    "cesium",
+    "glsl"
+  ],
+  "license": "ISC",
+  "devDependencies": {
+    "eslint": "catalog:tooling",
+    "@repo/config-typescript": "workspace:*",
+    "@repo/config-eslint": "workspace:*",
+    "@types/node": "catalog:tooling",
+    "typescript": "catalog:tooling"
+  },
+  "peerDependencies": {
+    "vite": "catalog:tooling"
+  }
+}

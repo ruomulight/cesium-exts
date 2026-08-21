@@ -1,0 +1,60 @@
+packages:
+  - "apps/*"
+  - "packages/*"
+  - "tooling/*"
+
+# 【分层 Catalog 版本管理】
+# 按语义分组管理 monorepo 中所有外部依赖，各子包通过 "catalog:<name>" 引用.
+# 用法：在 package.json 中将版本号写成 "catalog:<group>"，
+# 例如: "typescript": "catalog:tooling"
+#
+# 相关文档: https://pnpm.io/catalogs
+catalogs:
+  # ── Cesium 引擎（独立 catalog，不分层）─────────────────
+  cesium:
+    cesium: ^1.142.0
+
+  # ── 通用开发工具链（跨所有 workspace 共享）─────────────
+  tooling:
+    typescript: ^6.0.3
+    "@types/node": ^25.9.3
+    prettier: ^3.8.4
+    eslint: ^10.5.0
+    vite: ^8.1.0
+    turbo: ^2.9.18
+    rimraf: ^6.1.2
+    "@changesets/cli": ^2.29.8
+    husky: ^9.1.7
+    lint-staged: ^17.0.8
+    esbuild: ^0.28.1
+    gulp: ^5.0.1
+
+  # ── ESLint 生态插件和配置 ────────────────────────────
+  eslint:
+    "@eslint/js": ^10.0.1
+    eslint-config-prettier: ^10.1.8
+    eslint-plugin-perfectionist: 5.10.0
+    eslint-plugin-react-hooks: ^7.1.1
+    eslint-plugin-react-refresh: ^0.5.3
+    globals: ^17.7.0
+    typescript-eslint: ^8.62.0
+
+  # ── React 应用专属依赖 ──────────────────────────────
+  react-app:
+    react: ^19.2.7
+    react-dom: ^19.2.7
+    "@types/react": ^19.2.17
+    "@types/react-dom": ^19.2.3
+    "@vitejs/plugin-react": ^6.0.3
+    "@babel/core": ^8.0.1
+    "@rolldown/plugin-babel": ^0.2.3
+    "@types/babel__core": ^7.20.5
+    babel-plugin-react-compiler: ^1.0.0
+
+  # ── Cesium 插件专属依赖 ─────────────────────────────
+  cesium-plugin:
+    fs-extra: ^11.3.5
+    "@types/fs-extra": ^11.0.4
+    rollup-plugin-external-globals: ^0.13.0
+    serve-static: ^2.2.1
+    "@types/serve-static": ^2.2.0

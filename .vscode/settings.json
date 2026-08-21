@@ -1,0 +1,12 @@
+{
+  "json.schemas": [
+    {
+      "fileMatch": ["turbo.json"],
+      "url": "https://turbo.build/schema.json"
+    },
+    {
+      "fileMatch": ["components.json"],
+      "url": "https://ui.shadcn.com/schema.json"
+    }
+  ]
+}
