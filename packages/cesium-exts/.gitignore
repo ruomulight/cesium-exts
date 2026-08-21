@@ -1,3 +1,0 @@
-# .gitignore
-# 只忽略 cesium-exts/index.ts
-/index.ts

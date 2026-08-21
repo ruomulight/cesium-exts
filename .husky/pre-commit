@@ -1,5 +1,0 @@
-#!/bin/sh
-. "$(dirname "$0")/_/husky.sh"
-
-echo "🔍 运行 lint-staged..."
-pnpm exec lint-staged
