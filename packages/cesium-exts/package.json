@@ -29,9 +29,7 @@
   },
   "devDependencies": {
     "@repo/config-eslint": "workspace:*",
-    "esbuild": "catalog:tooling",
     "eslint": "catalog:tooling",
-    "gulp": "catalog:tooling",
     "typescript": "catalog:tooling",
     "typescript-eslint": "catalog:eslint"
   }

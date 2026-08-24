@@ -26,8 +26,6 @@ catalogs:
     "@changesets/cli": ^2.29.8
     husky: ^9.1.7
     lint-staged: ^17.0.8
-    esbuild: ^0.28.1
-    gulp: ^5.0.1
 
   # ── ESLint 生态插件和配置 ────────────────────────────
   eslint:
