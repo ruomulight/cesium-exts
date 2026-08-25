@@ -23,6 +23,7 @@ catalogs:
     vite: ^8.1.0
     turbo: ^2.9.18
     rimraf: ^6.1.2
+    tsdown: ^0.22.14
     "@changesets/cli": ^2.29.8
     husky: ^9.1.7
     lint-staged: ^17.0.8

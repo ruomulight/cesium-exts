@@ -40,10 +40,10 @@
     "rimraf": "catalog:tooling",
     "turbo": "catalog:tooling"
   },
-  "packageManager": "pnpm@10.10.0",
+  "packageManager": "pnpm@10.12.1",
   "engines": {
     "node": ">=22.22.1",
     "npm": ">=10.9.3",
-    "pnpm": ">=10.10.0"
+    "pnpm": ">=10.12.1"
   }
 }

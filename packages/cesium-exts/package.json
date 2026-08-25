@@ -30,6 +30,7 @@
   "devDependencies": {
     "@repo/config-eslint": "workspace:*",
     "eslint": "catalog:tooling",
+    "tsdown": "catalog:tooling",
     "typescript": "catalog:tooling",
     "typescript-eslint": "catalog:eslint"
   }
