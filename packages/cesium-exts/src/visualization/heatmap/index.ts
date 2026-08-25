@@ -1,4 +1,4 @@
-import h337, { type Heatmap } from "./src/core";
+import h337, { type Heatmap } from "./core";
 
 class HeatLayer {
   heatmap: Heatmap;
