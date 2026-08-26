@@ -344,7 +344,7 @@ importers:
   packages/vite-cesium-sandcastle:
     dependencies:
       fs-extra:
-        specifier: 11.4.0
+        specifier: catalog:cesium-plugin
         version: 11.4.0
       vite:
         specifier: catalog:tooling
@@ -357,7 +357,7 @@ importers:
         specifier: workspace:*
         version: link:../../tooling/config-typescript
       '@types/fs-extra':
-        specifier: 11.0.4
+        specifier: catalog:cesium-plugin
         version: 11.0.4
       '@types/node':
         specifier: catalog:tooling

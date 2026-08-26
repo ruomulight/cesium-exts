@@ -23,9 +23,13 @@
     "sandcastle"
   ],
   "license": "ISC",
+  "dependencies": {
+    "fs-extra": "catalog:cesium-plugin"
+  },
   "devDependencies": {
-    "@repo/config-typescript": "workspace:*",
     "@repo/config-eslint": "workspace:*",
+    "@repo/config-typescript": "workspace:*",
+    "@types/fs-extra": "catalog:cesium-plugin",
     "@types/node": "catalog:tooling",
     "eslint": "catalog:tooling",
     "typescript": "catalog:tooling"
