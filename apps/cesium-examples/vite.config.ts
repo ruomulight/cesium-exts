@@ -76,7 +76,6 @@ export default defineConfig((mode: ConfigEnv) => {
     // 配置全局常量
     define: {
       __APP_INFO__: pkg,
-      __CESIUM_BASE_URL__: JSON.stringify("/cesium/"),
       __INNER_ORIGIN__: "location.origin",
       __OUTER_ORIGIN__: "location.origin"
     }
