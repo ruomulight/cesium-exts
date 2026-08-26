@@ -1,3 +1,5 @@
+# cesium-exts
+
 基于 **pnpm workspace + Turborepo + TypeScript** 的 Cesium 扩展 monorepo：沉淀可复用的 Cesium 能力扩展库、配套 Vite 集成插件，以及一个 Sandcastle 风格的在线示例/调试应用。
 
 ## 项目定位
@@ -30,16 +32,16 @@
 
 ## 技术栈
 
-| 领域 | 选型 |
-| --- | --- |
-| 语言 | TypeScript（strict，`moduleResolution: bundler`） |
-| 包管理 | pnpm 10 workspace + 分层 catalog（`catalog:tooling` / `catalog:cesium` 等） |
-| 任务编排 | Turborepo（`envMode: strict`） |
-| 构建 | Vite（示例应用）、tsdown（库打包，ESM + CJS + d.ts） |
+| 领域        | 选型                                                         |
+| ----------- | ------------------------------------------------------------ |
+| 语言        | TypeScript（strict，`moduleResolution: bundler`）            |
+| 包管理      | pnpm 10 workspace + 分层 catalog（`catalog:tooling` / `catalog:cesium` 等） |
+| 任务编排    | Turborepo（`envMode: strict`）                               |
+| 构建        | Vite（示例应用）、tsdown（库打包，ESM + CJS + d.ts）         |
 | 示例应用 UI | React 19 + React Compiler、Tailwind CSS 4、Base UI、Monaco Editor |
-| 三维引擎 | CesiumJS（库中为 `peerDependency`，避免多份 Cesium 实例） |
-| 质量 | ESLint 扁平配置（含 perfectionist 导入排序）、Prettier、husky + lint-staged |
-| 版本发布 | Changesets |
+| 三维引擎    | CesiumJS（库中为 `peerDependency`，避免多份 Cesium 实例）    |
+| 质量        | ESLint 扁平配置（含 perfectionist 导入排序）、Prettier、husky + lint-staged |
+| 版本发布    | Changesets                                                   |
 
 ## 环境要求
 
@@ -141,15 +143,15 @@ cesiumUtils.flyToTarget(viewer, { targetPosition: Cesium.Cartesian3.fromDegrees(
 
 ## 关键入口（便于定位问题）
 
-| 文件 | 作用 |
-| --- | --- |
-| `packages/cesium-exts/index.ts` | 库对外导出入口 |
-| `packages/cesium-exts/tsdown.config.ts` | 库打包配置（ESM/CJS、external cesium、d.ts） |
-| `packages/cesium-exts/types/cesium-extensions.d.ts` | Cesium 内部渲染 API 的补充类型声明 |
-| `packages/vite-cesium-plugin/src/index.ts` | Cesium 集成插件主体 |
-| `apps/cesium-examples/vite.config.ts` | 示例应用构建与插件装配 |
-| `apps/cesium-examples/src/util/IframeBridge.ts` | 编辑器与预览 iframe 的通信桥 |
-| `pnpm-workspace.yaml` / `turbo.json` | workspace 与任务编排配置 |
+| 文件                                                | 作用                                         |
+| --------------------------------------------------- | -------------------------------------------- |
+| `packages/cesium-exts/index.ts`                     | 库对外导出入口                               |
+| `packages/cesium-exts/tsdown.config.ts`             | 库打包配置（ESM/CJS、external cesium、d.ts） |
+| `packages/cesium-exts/types/cesium-extensions.d.ts` | Cesium 内部渲染 API 的补充类型声明           |
+| `packages/vite-cesium-plugin/src/index.ts`          | Cesium 集成插件主体                          |
+| `apps/cesium-examples/vite.config.ts`               | 示例应用构建与插件装配                       |
+| `apps/cesium-examples/src/util/IframeBridge.ts`     | 编辑器与预览 iframe 的通信桥                 |
+| `pnpm-workspace.yaml` / `turbo.json`                | workspace 与任务编排配置                     |
 
 ## 新增示例
 
