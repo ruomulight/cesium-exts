@@ -343,6 +343,9 @@ importers:
 
   packages/vite-cesium-sandcastle:
     dependencies:
+      fs-extra:
+        specifier: 11.4.0
+        version: 11.4.0
       vite:
         specifier: catalog:tooling
         version: 8.2.1(@types/node@25.9.5)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.101.0)(yaml@2.9.0)
@@ -353,6 +356,9 @@ importers:
       '@repo/config-typescript':
         specifier: workspace:*
         version: link:../../tooling/config-typescript
+      '@types/fs-extra':
+        specifier: 11.0.4
+        version: 11.0.4
       '@types/node':
         specifier: catalog:tooling
         version: 25.9.5
