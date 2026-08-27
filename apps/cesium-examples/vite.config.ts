@@ -21,7 +21,13 @@ export default defineConfig((mode: ConfigEnv) => {
       react(),
       babel({ presets: [reactCompilerPreset()] }),
       tailwindcss(),
-      cesiumSandcastle({ cesiumBaseUrl: "/cesium/" })
+      cesiumSandcastle({
+        cesiumBaseUrl: "/cesium/",
+        // 把 bucket-client 注册为独立的 build entry，
+        // 插件会在 writeBundle 钩子里把 templates/bucket.html 中
+        // 的 `../src/util/bucket-client.ts` 引用替换为真实的 chunk 文件名
+        bucketClientEntry: "src/util/bucket-client.ts"
+      })
     ],
     resolve: {
       alias: {
