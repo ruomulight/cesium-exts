@@ -3,6 +3,7 @@ import tailwindcss from "@tailwindcss/vite";
 import react, { reactCompilerPreset } from "@vitejs/plugin-react";
 import path from "path";
 import { type BuildEnvironmentOptions, type ConfigEnv, defineConfig, loadEnv } from "vite";
+import viteCesiumExtsDev from "vite-cesium-exts-dev";
 import CesiumPlugin from "vite-cesium-plugin";
 import cesiumSandcastle from "vite-cesium-sandcastle";
 
@@ -18,6 +19,7 @@ export default defineConfig((mode: ConfigEnv) => {
 
     plugins: [
       CesiumPlugin(),
+      viteCesiumExtsDev(),
       react(),
       babel({ presets: [reactCompilerPreset()] }),
       tailwindcss(),
@@ -29,6 +31,12 @@ export default defineConfig((mode: ConfigEnv) => {
         bucketClientEntry: "src/util/bucket-client.ts"
       })
     ],
+    optimizeDeps: {
+      // 预打包 cesium 与 cesium-exts，使 bucket iframe 内的裸说明符 import
+      // （通过 importmap 映射到 /node_modules/.vite/deps/）能在浏览器侧拿到
+      // 一个完整、含所有嵌套依赖的 ES Module 产物
+      include: []
+    },
     resolve: {
       alias: {
         "@": path.resolve(import.meta.dirname, "./src")

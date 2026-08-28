@@ -250,6 +250,9 @@ importers:
       vite:
         specifier: catalog:tooling
         version: 8.2.1(@types/node@25.9.5)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.101.0)(yaml@2.9.0)
+      vite-cesium-exts-dev:
+        specifier: workspace:*
+        version: link:../../packages/vite-cesium-exts-dev
       vite-cesium-plugin:
         specifier: workspace:*
         version: link:../../packages/vite-cesium-plugin

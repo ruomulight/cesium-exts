@@ -1,4 +1,17 @@
 import * as Cesium from "cesium";
+import { cesiumUtils } from "cesium-exts";
+import { Pane } from "tweakpane";
+
+console.log(cesiumUtils.cesiumVersion());
+
+const PARAMS = {
+  background: { r: 255, g: 0, b: 55 },
+  tint: { r: 0, g: 255, b: 214, a: 0.5 }
+};
+
+const pane = new Pane();
+pane.addBinding(PARAMS, "background");
+pane.addBinding(PARAMS, "tint");
 
 const viewer = new Cesium.Viewer("cesiumContainer");
 
