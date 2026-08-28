@@ -8,6 +8,22 @@
       content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no"
     />
     <title>Cesium Demo</title>
+
+    <!--
+      ES Module 裸说明符导入映射（import map），用于将 iframe 内由父窗口注入的
+      用户代码中的 `import "tweakpane"` 等裸说明符解析到具体的 Runtime URL。
+      必须在任何 module script 之前声明（Vite 的 preImportMapHook 通过正则
+      扫描 HTML 验证顺序，注释里的字面 module-script 标签也会被匹配到，
+      因此注释中不要再出现 type="module" 字样）；vite-cesium-sandcastle 插件
+      会根据 dev / prod 环境把 __TWEAKPANE_URL__ 替换为正确的 URL。
+    -->
+    <script type="importmap">
+      {
+        "imports": {
+          "tweakpane": "__TWEAKPANE_URL__"
+        }
+      }
+    </script>
     <link rel="stylesheet" href="__CESIUM_BASE_URL__Widgets/widgets.css" vite-ignore />
     <link rel="stylesheet" href="__CESIUM_BASE_URL__Widgets/lighter.css" vite-ignore />
     <style>
@@ -99,9 +115,6 @@
         backdrop-filter: blur(4px);
       }
     </style>
-    <script>
-      window.CESIUM_BASE_URL = "__CESIUM_BASE_URL__";
-    </script>
   </head>
   <body class="sandcastle-loading">
     <!-- Cesium 核心库：作为常规脚本加载，使 Cesium 全局可用（UMD 格式不可通过 import map 作为 ES Module 导入） -->

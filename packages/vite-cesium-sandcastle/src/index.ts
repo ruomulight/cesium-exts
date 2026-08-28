@@ -167,6 +167,63 @@ export interface ViteCesiumSandcastleOptions {
    * ```
    */
   bucketHtmlPath?: string;
+
+  /**
+   * Tweakpane Runtime URL 在 import map 中的占位符。
+   *
+   * 插件会在经过 Vite 处理的 `bucket.html` 中查找该字符串，
+   * 并根据当前环境（dev / prod）替换为对应的 Tweakpane URL，
+   * 以便 iframe 内由父窗口注入的用户代码可以使用
+   * `import { Pane } from "tweakpane"` 这样的裸说明符。
+   *
+   * 占位符必须出现在 `<script type="importmap">` 中。
+   *
+   * @default "__TWEAKPANE_URL__"
+   *
+   * @example
+   * ```html
+   * <script type="importmap">
+   *   { "imports": { "tweakpane": "__TWEAKPANE_URL__" } }
+   * </script>
+   * ```
+   */
+  tweakpanePlaceholder?: string;
+
+  /**
+   * 生产环境使用的 Tweakpane Runtime URL。
+   *
+   * 该地址指向 `closeBundle` 钩子复制到
+   * `${build.outDir}/public/tweakpane.min.js` 的构建产物。
+   *
+   * 当应用部署在子路径下时（如 GitHub Pages），
+   * 应配置为带前缀的绝对路径，例如 `/cesium-examples/public/tweakpane.min.js`。
+   *
+   * @default "/public/tweakpane.min.js"
+   *
+   * @example
+   * ```ts
+   * tweakpaneUrl: "/assets/tweakpane.min.js"
+   * ```
+   */
+  tweakpaneUrl?: string;
+
+  /**
+   * 开发环境使用的 Tweakpane Runtime URL。
+   *
+   * 开发环境优先使用该配置。
+   * 如果未配置，则回退到 {@link tweakpaneUrl}。
+   *
+   * Vite 的开发服务器会直接服务项目根目录下的 `node_modules` 文件，
+   * 因此默认使用相对于 `templates/bucket.html` 的相对路径即可。
+   *
+   * @default "../node_modules/tweakpane/dist/tweakpane.min.js"
+   *
+   * @example
+   * ```ts
+   * devTweakpaneUrl: "http://localhost:8080/tweakpane.min.js"
+   * ```
+   */
+  devTweakpaneUrl?: string;
 }
 
 /**
@@ -225,6 +282,35 @@ const BUCKET_CLIENT_ENTRY_NAME = "bucket-client";
 const BUCKET_CLIENT_SOURCE_REF = "../src/util/bucket-client.ts";
 
 /**
+ * Tweakpane Runtime 在 import map 中的默认占位符。
+ *
+ * 该占位符会出现在 `bucket.html` 的
+ * `<script type="importmap">` 中，并由插件在
+ * dev / prod 环境中替换为真实的 URL。
+ */
+const DEFAULT_TWEAKPANE_PLACEHOLDER = "__TWEAKPANE_URL__";
+
+/**
+ * Tweakpane Runtime 在生产环境中的默认 URL。
+ *
+ * 指向 `closeBundle` 钩子复制到
+ * `${build.outDir}/public/tweakpane.min.js` 的构建产物。
+ *
+ * 若应用部署在子路径下，可通过 {@link ViteCesiumSandcastleOptions.tweakpaneUrl}
+ * 覆盖该默认值。
+ */
+const DEFAULT_TWEAKPANE_URL = "/public/tweakpane.min.js";
+
+/**
+ * Tweakpane Runtime 在开发环境中的默认 URL。
+ *
+ * Vite 的开发服务器会直接服务项目根目录下的 `node_modules` 文件，
+ * 因此该相对路径会在 `templates/bucket.html` 处被解析为
+ * `/node_modules/tweakpane/dist/tweakpane.min.js`。
+ */
+const DEFAULT_DEV_TWEAKPANE_URL = "../node_modules/tweakpane/dist/tweakpane.min.js";
+
+/**
  * Vite Cesium Sandcastle 插件。
  *
  * 该插件用于处理 Cesium Sandcastle 风格示例项目的
@@ -271,7 +357,10 @@ export default function viteCesiumSandcastle(options: ViteCesiumSandcastleOption
     cesiumBaseUrl = "/cesium/",
     devCesiumBaseUrl,
     bucketClientEntry,
-    bucketHtmlPath = "templates/bucket.html"
+    bucketHtmlPath = "templates/bucket.html",
+    tweakpanePlaceholder = DEFAULT_TWEAKPANE_PLACEHOLDER,
+    tweakpaneUrl = DEFAULT_TWEAKPANE_URL,
+    devTweakpaneUrl = DEFAULT_DEV_TWEAKPANE_URL
   } = options;
 
   /**
@@ -374,7 +463,7 @@ export default function viteCesiumSandcastle(options: ViteCesiumSandcastleOption
 
     /**
      * 在 Vite 处理 `index.html` 之前替换
-     * Cesium 基础资源 URL。
+     * Cesium 基础资源 URL 与 import map 中的 Tweakpane URL。
      *
      * 开发环境：
      *
@@ -389,19 +478,26 @@ export default function viteCesiumSandcastle(options: ViteCesiumSandcastleOption
      * ```text
      * cesiumBaseUrl
      * ```
+     *
+     * Tweakpane URL 同理，dev / prod 分别由
+     * {@link ViteCesiumSandcastleOptions.devTweakpaneUrl}
+     * 与 {@link ViteCesiumSandcastleOptions.tweakpaneUrl} 控制。
      */
     transformIndexHtml: {
       order: "pre",
 
       /**
-       * 替换 HTML 中的 Cesium 基础资源占位符。
+       * 替换 HTML 中的 Cesium 基础资源占位符与
+       * import map 中的 Tweakpane 占位符。
        */
       handler(html) {
         const isDev = config?.command === "serve";
 
         const finalBaseUrl = isDev && devCesiumBaseUrl ? devCesiumBaseUrl : cesiumBaseUrl;
 
-        return html.replaceAll(placeholder, finalBaseUrl);
+        const finalTweakpaneUrl = isDev && devTweakpaneUrl ? devTweakpaneUrl : tweakpaneUrl;
+
+        return html.replaceAll(placeholder, finalBaseUrl).replaceAll(tweakpanePlaceholder, finalTweakpaneUrl);
       }
     },
 
@@ -458,7 +554,9 @@ export default function viteCesiumSandcastle(options: ViteCesiumSandcastleOption
           distBucketHtml,
           bundle,
           placeholder,
-          cesiumBaseUrl
+          cesiumBaseUrl,
+          tweakpanePlaceholder,
+          tweakpaneUrl
         });
       } catch (error) {
         console.error("[vite-cesium-sandcastle] Failed to process templates:", error);
@@ -534,8 +632,18 @@ async function rewriteBucketHtml(params: {
    * 生产环境 Cesium 基础资源 URL。
    */
   cesiumBaseUrl: string;
+
+  /**
+   * Tweakpane Runtime URL 在 import map 中的占位符。
+   */
+  tweakpanePlaceholder: string;
+
+  /**
+   * 生产环境 Tweakpane Runtime URL。
+   */
+  tweakpaneUrl: string;
 }): Promise<void> {
-  const { distBucketHtml, bundle, placeholder, cesiumBaseUrl } = params;
+  const { distBucketHtml, bundle, placeholder, cesiumBaseUrl, tweakpanePlaceholder, tweakpaneUrl } = params;
 
   /**
    * 模板不存在时直接跳过。
@@ -560,6 +668,14 @@ async function rewriteBucketHtml(params: {
    * 替换 Cesium 基础资源 URL。
    */
   content = content.replaceAll(placeholder, cesiumBaseUrl);
+
+  /**
+   * 替换 import map 中的 Tweakpane Runtime URL。
+   *
+   * 若模板中未配置 import map（例如旧版本 bucket.html），
+   * 此次替换不会产生任何影响，从而保持向后兼容。
+   */
+  content = content.replaceAll(tweakpanePlaceholder, tweakpaneUrl);
 
   /**
    * 如果成功找到 bucket-client Chunk，
