@@ -1,0 +1,47 @@
+---
+description: cesium-exts monorepo 总览与开发约定
+alwaysApply: true
+---
+
+# cesium-exts
+
+pnpm workspace + Turborepo + TypeScript 的 Cesium 扩展 monorepo。Node `>=22.22.1`，包管理只用 `pnpm`（`>=10.12.1`）。
+
+## 目录职责
+
+- `packages/*`：可复用库与 Vite 插件，禁止反向依赖 `apps/*`
+- `apps/cesium-examples`：Sandcastle 风格示例应用
+- `tooling/*`：共享 tsconfig / ESLint / Prettier
+- 根目录只放编排与公共配置
+
+关键包：`cesium-exts`（RadarScanPrimitive / HeatLayer / WindLayer / cesiumUtils）、`vite-cesium-plugin`、`vite-cesium-sandcastle`、`vite-cesium-exts-dev`。
+
+## 依赖与构建
+
+- 外部依赖写成 `catalog:<group>`（如 `catalog:tooling`、`catalog:cesium`）
+- 内部依赖写成 `workspace:*` 或 `workspace:^`
+- Cesium 在库/插件中一律 `peerDependency`，避免多份实例
+- 新包 `type: "module"`；tsconfig 继承 `@repo/config-typescript`；eslint 复用 `@repo/config-eslint`
+- turbo 脚本名对齐：`build`、`check-types`、`lint`、`test`、`clean`
+- 发布用 Changesets（`pnpm changeset`）
+
+## 示例应用
+
+新增示例放在 `apps/cesium-examples/gallery/cesium/<example-name>/`，必须包含：
+
+- `sandcastle.yaml`：title / description / labels / thumbnail
+- `index.html`：DOM（可用 `__CESIUM_BASE_URL__`）
+- `main.js`：示例逻辑
+- `thumbnail.jpg`（缺省可复用 placeholder）
+
+示例里用 `import * as Cesium from "cesium"` 和 `import { ... } from "cesium-exts"`。
+
+## 命令
+
+```bash
+pnpm dev                          # 启动示例应用
+pnpm --filter cesium-examples dev
+pnpm build && pnpm check-types && pnpm lint
+```
+
+`HeatLayer` / `WindLayer` 仍是占位 API，不要当稳定接口改或对外宣传。
