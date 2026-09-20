@@ -1,256 +1,212 @@
-import { HeatmapConfig } from "./config";
+import { type HeatmapDataSet, type HeatmapInputPoint, type HeatmapPoint, type ResolvedHeatmapOptions } from "./config";
+import { type HeatmapRenderData, type HeatmapRenderPoint } from "./types";
 
-/**
- * 数据点接口
- */
-export interface DataPoint {
-  [key: string]: any;
-  x: number;
-  y: number;
-  value: number;
-  radius?: number;
+/** 相同画布像素的聚合键。 */
+function pointKey(x: number, y: number): string {
+  return `${x},${y}`;
 }
 
 /**
- * 数据存储配置接口
+ * `addData` 的调度结果，供 {@link Heatmap} 决定增量绘制还是全量重绘。
  */
-export interface StoreConfig {
-  xField?: string;
-  yField?: string;
-  valueField?: string;
-  radius?: number;
-  defaultXField?: string;
-  defaultYField?: string;
-  defaultValueField?: string;
+export interface StoreAddResult {
+  /** `none`：无有效点；`partial`：极值未变；`all`：极值变化或需全量 */
+  render: "all" | "partial" | "none";
+  /** min/max 是否在本次写入中被改写 */
+  extremaChanged: boolean;
+  /** 交给渲染器的数据。`partial` 时 `points` 仅为本次增量 */
+  payload: HeatmapRenderData;
 }
 
 /**
- * 数据存储类，负责管理热力图数据和极值
+ * 热力点存储器。
+ *
+ * 以 `"x,y"` 为键聚合相同像素上的强度；首次写入某点时锁定其 `radius`。
+ * 坐标必须是有限数字，否则该点被忽略。
  */
 export class Store {
-  private _coordinator: any = {};
-  private _data: number[][] = [];
-  private _radi: number[][] = [];
-  private _min: number = 10;
-  private _max: number = 1;
+  private readonly _points = new Map<string, HeatmapRenderPoint>();
+  private _min = 0;
+  private _max = 1;
+  private _hasExtrema = false;
   private readonly _xField: string;
   private readonly _yField: string;
   private readonly _valueField: string;
-  private readonly _cfgRadius?: number;
+  private _radius: number;
 
   /**
-   * 构造函数
-   * @param config - 存储配置
+   * @param config 字段映射与默认半径
    */
-  constructor(config: StoreConfig) {
-    this._xField = config.xField || config.defaultXField || "x";
-    this._yField = config.yField || config.defaultYField || "y";
-    this._valueField = config.valueField || config.defaultValueField || "value";
-
-    if (config.radius) {
-      this._cfgRadius = config.radius;
-    }
+  constructor(config: Pick<ResolvedHeatmapOptions, "xField" | "yField" | "valueField" | "radius">) {
+    this._xField = config.xField;
+    this._yField = config.yField;
+    this._valueField = config.valueField;
+    this._radius = config.radius;
   }
 
   /**
-   * 整理数据点并更新极值
-   * @param dataPoint - 原始数据点
-   * @param forceRender - 是否强制渲染（更新极值）
-   * @returns 整理后的数据点或 false
+   * 更新缺省点半径，只影响后续未自带 `radius` 的新点。
+   *
+   * @param radius 半径（像素）
    */
-  private _organiseData(dataPoint: DataPoint, forceRender: boolean): any {
-    const x = dataPoint[this._xField]!;
-    const y = dataPoint[this._yField]!;
-    const radi = this._radi;
-    const store = this._data;
-    const max = this._max;
-    const min = this._min;
-    const value = dataPoint[this._valueField] || 1;
-    const radius = dataPoint.radius || this._cfgRadius || HeatmapConfig.defaultRadius;
-
-    if (!store[x]) {
-      store[x] = [];
-      radi[x] = [];
-    }
-
-    if (!store[x]![y]) {
-      store[x]![y] = value;
-      radi[x]![y] = radius;
-    } else {
-      store[x]![y]! += value;
-    }
-    const storedVal = store[x]![y]!;
-
-    if (storedVal > max) {
-      if (!forceRender) {
-        this._max = storedVal;
-      } else {
-        this.setDataMax(storedVal);
-      }
-      return false;
-    } else if (storedVal < min) {
-      if (!forceRender) {
-        this._min = storedVal;
-      } else {
-        this.setDataMin(storedVal);
-      }
-      return false;
-    } else {
-      return {
-        x: x,
-        y: y,
-        value: value,
-        radius: radius,
-        min: min,
-        max: max
-      };
-    }
+  public setRadius(radius: number): void {
+    this._radius = radius;
   }
 
   /**
-   * 将内部数据格式还原为平面数组格式
-   * @returns 包含 min, max 和 data 数组的对象
+   * 追加数据。极值变化时返回全量快照，否则只返回本次增量，避免把聚合总值再叠加一次。
+   *
+   * @param data 单个点或点数组
    */
-  private _unOrganizeData(): { min: number; max: number; data: DataPoint[] } {
-    const unorganizedData: DataPoint[] = [];
-    const data = this._data;
-    const radi = this._radi;
+  public addData(data: HeatmapInputPoint | HeatmapInputPoint[]): StoreAddResult {
+    const items = Array.isArray(data) ? data : [data];
+    const deltas: HeatmapRenderPoint[] = [];
+    let extremaChanged = false;
 
-    for (const x in data) {
-      for (const y in data[x]!) {
-        unorganizedData.push({
-          x: Number(x),
-          y: Number(y),
-          radius: radi[x]![y]!,
-          value: data[x]![y]!
-        });
-      }
+    for (const item of items) {
+      const result = this._ingest(item);
+      if (!result) continue;
+      deltas.push(result.delta);
+      if (result.extremaChanged) extremaChanged = true;
     }
+
+    if (deltas.length === 0) {
+      return { render: "none", extremaChanged: false, payload: this.getRenderData() };
+    }
+
+    if (extremaChanged) {
+      return { render: "all", extremaChanged: true, payload: this.getRenderData() };
+    }
+
     return {
-      min: this._min,
-      max: this._max,
-      data: unorganizedData
+      render: "partial",
+      extremaChanged: false,
+      payload: { min: this._min, max: this._max, points: deltas }
     };
   }
 
   /**
-   * 当极值改变时触发事件
+   * 用完整数据集替换内部存储。`min` / `max` 以入参为准。
+   *
+   * @param data 数据集
    */
-  private _onExtremaChange(): void {
-    this._coordinator.emit("extremachange", {
-      min: this._min,
-      max: this._max
-    });
-  }
+  public setData(data: HeatmapDataSet): HeatmapRenderData {
+    this._points.clear();
+    this._hasExtrema = false;
 
-  /**
-   * 添加数据点
-   * @param data - 单个数据点或数据点数组
-   * @returns 当前 Store 实例
-   */
-  public addData(data: DataPoint | DataPoint[]): this {
-    if (Array.isArray(data)) {
-      let dataLen = data.length;
-      while (dataLen--) {
-        this.addData(data[dataLen]!);
-      }
-    } else {
-      const organisedEntry = this._organiseData(data, true);
-      if (organisedEntry) {
-        if (this._data.length === 0) {
-          this._min = this._max = organisedEntry.value;
-        }
-        this._coordinator.emit("renderpartial", {
-          min: this._min,
-          max: this._max,
-          data: [organisedEntry]
-        });
-      }
+    for (const item of data.data) {
+      this._ingest(item);
     }
-    return this;
-  }
 
-  /**
-   * 设置完整的数据集
-   * @param data - 包含 min, max 和 data 的对象
-   * @returns 当前 Store 实例
-   */
-  public setData(data: { min: number; max: number; data: DataPoint[] }): this {
-    const dataPoints = data.data;
-    const pointsLen = dataPoints.length;
-
-    // 重置数据数组
-    this._data = [];
-    this._radi = [];
-
-    for (let i = 0; i < pointsLen; i++) {
-      this._organiseData(dataPoints[i]!, false);
-    }
+    this._min = data.min ?? 0;
     this._max = data.max;
-    this._min = data.min || 0;
-
-    this._onExtremaChange();
-    this._coordinator.emit("renderall", this._getInternalData());
-    return this;
+    this._hasExtrema = this._points.size > 0;
+    return this.getRenderData();
   }
 
   /**
-   * 移除数据（待实现）
+   * @param max 新的色带最大值
    */
-  public removeData(): void {
-    // TODO: 实现
-  }
-
-  /**
-   * 设置数据最大值并触发重新渲染
-   * @param max - 最大值
-   * @returns 当前 Store 实例
-   */
-  public setDataMax(max: number): this {
+  public setDataMax(max: number): HeatmapRenderData {
     this._max = max;
-    this._onExtremaChange();
-    this._coordinator.emit("renderall", this._getInternalData());
-    return this;
+    this._hasExtrema = true;
+    return this.getRenderData();
   }
 
   /**
-   * 设置数据最小值并触发重新渲染
-   * @param min - 最小值
-   * @returns 当前 Store 实例
+   * @param min 新的色带最小值
    */
-  public setDataMin(min: number): this {
+  public setDataMin(min: number): HeatmapRenderData {
     this._min = min;
-    this._onExtremaChange();
-    this._coordinator.emit("renderall", this._getInternalData());
-    return this;
+    this._hasExtrema = true;
+    return this.getRenderData();
   }
 
-  /**
-   * 设置协调器，用于事件发布订阅
-   * @param coordinator - 协调器对象
-   */
-  public setCoordinator(coordinator: any): void {
-    this._coordinator = coordinator;
+  /** 清空全部点，并将极值重置为 `min=0, max=1`。 */
+  public clear(): HeatmapRenderData {
+    this._points.clear();
+    this._min = 0;
+    this._max = 1;
+    this._hasExtrema = false;
+    return this.getRenderData();
   }
 
-  /**
-   * 获取内部存储的数据格式
-   * @returns 内部数据对象
-   */
-  private _getInternalData(): any {
+  /** 当前色带最小值 */
+  public get min(): number {
+    return this._min;
+  }
+
+  /** 当前色带最大值 */
+  public get max(): number {
+    return this._max;
+  }
+
+  /** 供渲染器使用的内部快照（点数组为浅拷贝） */
+  public getRenderData(): HeatmapRenderData {
     return {
-      max: this._max,
       min: this._min,
-      data: this._data,
-      radi: this._radi
+      max: this._max,
+      points: [...this._points.values()]
+    };
+  }
+
+  /** 对外导出的聚合数据（点对象为拷贝） */
+  public getData(): { min: number; max: number; data: HeatmapPoint[] } {
+    return {
+      min: this._min,
+      max: this._max,
+      data: [...this._points.values()].map((point) => ({ ...point }))
     };
   }
 
   /**
-   * 获取外部可用的数据格式
-   * @returns 外部数据对象
+   * 写入单点：同位置累加 value，并判断极值是否被刷新。
+   * 返回的 `delta` 是本次增量，供增量绘制使用。
    */
-  public getData(): { min: number; max: number; data: DataPoint[] } {
-    return this._unOrganizeData();
+  private _ingest(input: HeatmapInputPoint): { delta: HeatmapRenderPoint; extremaChanged: boolean } | null {
+    const delta = this._readPoint(input);
+    if (!delta) return null;
+
+    const key = pointKey(delta.x, delta.y);
+    const existing = this._points.get(key);
+    let storedVal: number;
+    if (existing) {
+      existing.value += delta.value;
+      storedVal = existing.value;
+    } else {
+      this._points.set(key, { ...delta });
+      storedVal = delta.value;
+    }
+
+    let extremaChanged = false;
+
+    if (!this._hasExtrema) {
+      this._min = storedVal;
+      this._max = storedVal;
+      this._hasExtrema = true;
+      extremaChanged = true;
+    } else if (storedVal > this._max) {
+      this._max = storedVal;
+      extremaChanged = true;
+    } else if (storedVal < this._min) {
+      this._min = storedVal;
+      extremaChanged = true;
+    }
+
+    return { delta, extremaChanged };
+  }
+
+  /** 按配置字段读取坐标 / 强度 / 半径；非法坐标返回 `null`。 */
+  private _readPoint(input: HeatmapInputPoint): HeatmapRenderPoint | null {
+    const x = Number(input[this._xField]);
+    const y = Number(input[this._yField]);
+    if (!Number.isFinite(x) || !Number.isFinite(y)) return null;
+
+    const rawValue = input[this._valueField];
+    const value = typeof rawValue === "number" && Number.isFinite(rawValue) ? rawValue : 1;
+    const rawRadius = input.radius;
+    const radius = typeof rawRadius === "number" && Number.isFinite(rawRadius) ? rawRadius : this._radius;
+
+    return { x, y, value, radius };
   }
 }

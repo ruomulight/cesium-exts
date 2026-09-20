@@ -1,408 +1,447 @@
-import { HeatmapConfig } from "../config";
-import { type RendererConfig } from "./canvas2d";
+import { type ResolvedHeatmapOptions } from "../config";
+import { type HeatmapRenderData, type HeatmapRenderer, type HeatmapRenderPoint } from "../types";
+import {
+  FRAGMENT_SHADER_COLORIZE,
+  FRAGMENT_SHADER_POINT,
+  VERTEX_SHADER_POINT,
+  VERTEX_SHADER_SCREEN
+} from "./shaders";
+import {
+  createColorPalette,
+  mountCanvas,
+  opacityToByte,
+  resolveCanvasSize,
+  sampleHeatValue
+} from "./shared";
+
+/** 点绘制 program 的 attrib / uniform 缓存，避免每帧查询。 */
+interface PointProgram {
+  program: WebGLProgram;
+  aPosition: number;
+  aIntensity: number;
+  aRadius: number;
+  uResolution: WebGLUniformLocation | null;
+  uBlur: WebGLUniformLocation | null;
+}
+
+/** 上色 pass 的 attrib / uniform 缓存。 */
+interface ColorizeProgram {
+  program: WebGLProgram;
+  aPosition: number;
+  uAlphaTexture: WebGLUniformLocation | null;
+  uPaletteTexture: WebGLUniformLocation | null;
+  uOpacity: WebGLUniformLocation | null;
+  uMaxOpacity: WebGLUniformLocation | null;
+  uMinOpacity: WebGLUniformLocation | null;
+  uUseGradientOpacity: WebGLUniformLocation | null;
+}
 
 /**
- * WebGL 渲染器类，提供高性能的热力图渲染
+ * WebGL 热力图渲染器。
+ *
+ * 两趟绘制：先以加法混合把径向点累加到 alpha 纹理，再采样调色板输出到屏幕。
+ * 强度已归一化，模糊与透明度规则与 {@link Canvas2dRenderer} 对齐。
+ * 卸载时必须调用 {@link CanvasWebGLRenderer.destroy}。
  */
-export class CanvasWebGLRenderer {
-  public canvas: HTMLCanvasElement;
+export class CanvasWebGLRenderer implements HeatmapRenderer {
+  /** 可见输出画布 */
+  public readonly canvas: HTMLCanvasElement;
   private readonly gl: WebGLRenderingContext;
-  private _width: number = 0;
-  private _height: number = 0;
-  private _max: number = 1;
-  private _min: number = 0;
+  /** 为 true 时 destroy 会移除 canvas 节点 */
+  private readonly _ownsCanvas: boolean;
+  private readonly _container: HTMLElement | undefined;
 
-  // Shader programs
-  private pointProgram!: WebGLProgram;
-  private colorizeProgram!: WebGLProgram;
+  private _width = 0;
+  private _height = 0;
+  private _max = 1;
+  private _min = 0;
+  private _opacity = 0;
+  private _maxOpacity = 255;
+  private _minOpacity = 0;
+  private _blur = 0.85;
+  private _useGradientOpacity = false;
+  private _destroyed = false;
 
-  // Buffers
-  private pointBuffer!: WebGLBuffer;
-  private quadBuffer!: WebGLBuffer;
-
-  // Textures
-  private framebuffer!: WebGLFramebuffer;
-  private alphaTexture!: WebGLTexture;
-  private paletteTexture!: WebGLTexture;
-
-  private _palette!: Uint8ClampedArray;
-  private _opacity: number = 255;
-  private _maxOpacity: number = 255;
-  private _minOpacity: number = 0;
-  private _blur: number = 0.85;
-  private _useGradientOpacity: boolean = false;
+  private readonly pointProgram: PointProgram;
+  private readonly colorizeProgram: ColorizeProgram;
+  private readonly pointBuffer: WebGLBuffer;
+  private readonly quadBuffer: WebGLBuffer;
+  /** 绑定 alphaTexture 的离屏帧缓冲 */
+  private readonly framebuffer: WebGLFramebuffer;
+  /** 强度累加纹理 */
+  private readonly alphaTexture: WebGLTexture;
+  /** 256×1 调色板纹理 */
+  private readonly paletteTexture: WebGLTexture;
 
   /**
-   * 构造函数
-   * @param config - 渲染器配置
+   * 先完成 WebGL 资源创建，成功后再挂到 DOM，以便失败时回退 Canvas2D。
+   *
+   * @param config 已解析的完整配置
+   * @throws 当前 canvas 无法创建 WebGL 上下文，或着色器编译/链接失败
    */
-  constructor(config: RendererConfig) {
-    const container = config.container;
-    const canvas = (this.canvas = config.canvas || document.createElement("canvas"));
-    canvas.className = "heatmap-canvas";
+  constructor(config: ResolvedHeatmapOptions) {
+    this._ownsCanvas = !config.canvas;
+    this._container = config.container;
+    this.canvas = config.canvas ?? document.createElement("canvas");
 
-    const computed = getComputedStyle(container) || {};
-    this._width = canvas.width = config.width || +(computed.width?.replace(/px/, "") || 0);
-    this._height = canvas.height = config.height || +(computed.height?.replace(/px/, "") || 0);
+    const size = resolveCanvasSize(this.canvas, config);
+    this._width = this.canvas.width = Math.max(size.width, 0);
+    this._height = this.canvas.height = Math.max(size.height, 0);
 
+    const contextOptions: WebGLContextAttributes = {
+      preserveDrawingBuffer: true,
+      antialias: false,
+      // 与 Canvas2D putImageData 一样使用直通 alpha，避免叠到页面上发灰/发暗
+      premultipliedAlpha: false
+    };
     const gl =
-      canvas.getContext("webgl", { preserveDrawingBuffer: true, antialias: false }) ||
-      (canvas.getContext("experimental-webgl") as WebGLRenderingContext);
+      this.canvas.getContext("webgl", contextOptions) ??
+      (this.canvas.getContext("experimental-webgl", contextOptions) as WebGLRenderingContext | null);
 
     if (!gl) {
-      throw new Error("WebGL not supported");
+      throw new Error("[heatmap] WebGL is not supported.");
     }
     this.gl = gl;
 
-    canvas.style.cssText = "position:absolute;left:0;top:0;";
-    container.style.position = "relative";
-    container.appendChild(canvas);
+    this.pointProgram = this._createPointProgram();
+    this.colorizeProgram = this._createColorizeProgram();
+    this.pointBuffer = this._createBuffer();
+    this.quadBuffer = this._createBuffer();
+    this.framebuffer = this._createFramebuffer();
+    this.alphaTexture = this._createTexture();
+    this.paletteTexture = this._createTexture();
 
-    this._initWebGL();
+    gl.bindBuffer(gl.ARRAY_BUFFER, this.quadBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 1, -1, -1, 1, 1, 1]), gl.STATIC_DRAW);
+
+    this._resizeAlphaTexture();
+    mountCanvas(this.canvas, config.container);
     this.updateConfig(config);
   }
 
   /**
-   * 初始化 WebGL 资源
+   * 清空 alpha 纹理后全量重绘。
+   *
+   * @param data 当前全部聚合点
    */
-  private _initWebGL(): void {
-    const gl = this.gl;
-
-    // 1. 初始化着色器程序
-    this.pointProgram = this._createProgram(vertexShaderPoint, fragmentShaderPoint);
-    this.colorizeProgram = this._createProgram(vertexShaderScreen, fragmentShaderColorize);
-
-    // 2. 初始化缓冲区
-    this.pointBuffer = gl.createBuffer()!;
-    this.quadBuffer = gl.createBuffer()!;
-
-    // 屏幕填充四边形数据
-    gl.bindBuffer(gl.ARRAY_BUFFER, this.quadBuffer);
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 1, -1, -1, 1, 1, 1]), gl.STATIC_DRAW);
-
-    // 3. 初始化帧缓冲区和纹理
-    this.framebuffer = gl.createFramebuffer()!;
-    this.alphaTexture = gl.createTexture()!;
-    gl.bindTexture(gl.TEXTURE_2D, this.alphaTexture);
-    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, this._width, this._height, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-
-    this.paletteTexture = gl.createTexture()!;
-    gl.bindTexture(gl.TEXTURE_2D, this.paletteTexture);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+  public renderAll(data: HeatmapRenderData): void {
+    if (this._destroyed) return;
+    this._min = data.min;
+    this._max = data.max;
+    this._draw(data.points, false);
   }
 
   /**
-   * 创建着色器程序
+   * 在已有 alpha 纹理上叠加新点后再上色。调用方须保证极值未变。
+   *
+   * @param data 本次增量点
    */
-  private _createProgram(vsSource: string, fsSource: string): WebGLProgram {
-    const gl = this.gl;
-    const vs = this._compileShader(vsSource, gl.VERTEX_SHADER);
-    const fs = this._compileShader(fsSource, gl.FRAGMENT_SHADER);
-    const program = gl.createProgram()!;
-    gl.attachShader(program, vs);
-    gl.attachShader(program, fs);
-    gl.linkProgram(program);
-    if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
-      throw new Error("Program link error: " + gl.getProgramInfoLog(program));
-    }
-    return program;
+  public renderPartial(data: HeatmapRenderData): void {
+    if (this._destroyed) return;
+    this._min = data.min;
+    this._max = data.max;
+    this._draw(data.points, true);
   }
 
   /**
-   * 编译着色器
+   * 更新渐变、模糊、透明度与尺寸。
+   *
+   * @param config 新配置
    */
-  private _compileShader(source: string, type: number): WebGLShader {
-    const gl = this.gl;
-    const shader = gl.createShader(type)!;
-    gl.shaderSource(shader, source);
-    gl.compileShader(shader);
-    if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
-      throw new Error("Shader compile error: " + gl.getShaderInfoLog(shader));
-    }
-    return shader;
-  }
+  public updateConfig(config: ResolvedHeatmapOptions): void {
+    if (this._destroyed) return;
 
-  /**
-   * 更新配置
-   * @param config - 配置项
-   */
-  public updateConfig(config: RendererConfig): void {
-    if (config.gradient || config.defaultGradient) {
-      this._updatePalette(config);
-    }
-    this._blur = config.blur === 0 ? 0 : config.blur || config.defaultBlur || HeatmapConfig.defaultBlur;
-    this._opacity = (config.opacity || 0) * 255;
-    this._maxOpacity = (config.maxOpacity || config.defaultMaxOpacity || HeatmapConfig.defaultMaxOpacity) * 255;
-    this._minOpacity = (config.minOpacity || config.defaultMinOpacity || HeatmapConfig.defaultMinOpacity) * 255;
-    this._useGradientOpacity = !!config.useGradientOpacity;
+    this._blur = config.blur;
+    this._opacity = opacityToByte(config.opacity);
+    this._maxOpacity = opacityToByte(config.maxOpacity);
+    this._minOpacity = opacityToByte(config.minOpacity);
+    this._useGradientOpacity = config.useGradientOpacity;
+    this._updatePalette(config.gradient);
 
     if (config.backgroundColor) {
       this.canvas.style.backgroundColor = config.backgroundColor;
     }
 
-    if (config.width || config.height) {
-      this.setDimensions(config.width || this._width, config.height || this._height);
-    }
+    const width = config.width ?? this._width;
+    const height = config.height ?? this._height;
+    this.setDimensions(width, height);
   }
 
   /**
-   * 更新调色板纹理
-   */
-  private _updatePalette(config: any): void {
-    const gl = this.gl;
-    const gradientConfig = config.gradient || config.defaultGradient || HeatmapConfig.defaultGradient;
-    const canvas = document.createElement("canvas");
-    const ctx = canvas.getContext("2d")!;
-    canvas.width = 256;
-    canvas.height = 1;
-
-    const gradient = ctx.createLinearGradient(0, 0, 256, 1);
-    for (const key in gradientConfig) {
-      gradient.addColorStop(Number(key), gradientConfig[key]);
-    }
-    ctx.fillStyle = gradient;
-    ctx.fillRect(0, 0, 256, 1);
-
-    this._palette = ctx.getImageData(0, 0, 256, 1).data;
-    gl.bindTexture(gl.TEXTURE_2D, this.paletteTexture);
-    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 256, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE, this._palette);
-  }
-
-  /**
-   * 设置尺寸
-   * @param width - 宽度
-   * @param height - 高度
+   * 调整画布、viewport 与 alpha 纹理尺寸。
+   *
+   * @param width 宽度（像素）
+   * @param height 高度（像素）
    */
   public setDimensions(width: number, height: number): void {
-    const gl = this.gl;
+    if (this._destroyed || (width === this._width && height === this._height)) return;
     this._width = this.canvas.width = width;
     this._height = this.canvas.height = height;
-    gl.viewport(0, 0, width, height);
+    this.gl.viewport(0, 0, Math.max(width, 1), Math.max(height, 1));
+    this._resizeAlphaTexture();
+  }
 
+  /**
+   * 从 alpha 纹理 `readPixels`。WebGL 原点在左下，读取时翻转 Y。
+   *
+   * @param point 画布像素坐标（左上原点）
+   */
+  public getValueAt(point: { x: number; y: number }): number {
+    if (this._destroyed || this._width <= 0 || this._height <= 0) return 0;
+
+    const gl = this.gl;
+    const pixels = new Uint8Array(4);
+    gl.bindFramebuffer(gl.FRAMEBUFFER, this.framebuffer);
+    gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, this.alphaTexture, 0);
+    gl.readPixels(point.x, this._height - point.y, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
+    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+
+    return sampleHeatValue(pixels[3] ?? 0, this._min, this._max);
+  }
+
+  /** @returns PNG Data URL */
+  public getDataURL(): string {
+    return this.canvas.toDataURL();
+  }
+
+  /**
+   * 删除 program / buffer / texture / framebuffer。由本实例创建的 canvas 会从 DOM 移除。
+   */
+  public destroy(): void {
+    if (this._destroyed) return;
+
+    const gl = this.gl;
+    gl.deleteProgram(this.pointProgram.program);
+    gl.deleteProgram(this.colorizeProgram.program);
+    gl.deleteBuffer(this.pointBuffer);
+    gl.deleteBuffer(this.quadBuffer);
+    gl.deleteTexture(this.alphaTexture);
+    gl.deleteTexture(this.paletteTexture);
+    gl.deleteFramebuffer(this.framebuffer);
+
+    if (this._ownsCanvas) {
+      this.canvas.remove();
+    } else if (this._container && this.canvas.parentElement === this._container) {
+      this._container.removeChild(this.canvas);
+    }
+
+    this._destroyed = true;
+  }
+
+  /** 创建 ARRAY_BUFFER。 */
+  private _createBuffer(): WebGLBuffer {
+    const buffer = this.gl.createBuffer();
+    if (!buffer) {
+      throw new Error("[heatmap] Failed to create WebGL buffer.");
+    }
+    return buffer;
+  }
+
+  /** 创建离屏 FBO，用于绑定 alpha 纹理。 */
+  private _createFramebuffer(): WebGLFramebuffer {
+    const framebuffer = this.gl.createFramebuffer();
+    if (!framebuffer) {
+      throw new Error("[heatmap] Failed to create WebGL framebuffer.");
+    }
+    return framebuffer;
+  }
+
+  /** 创建 NEAREST / CLAMP 的 2D 纹理。 */
+  private _createTexture(): WebGLTexture {
+    const gl = this.gl;
+    const texture = gl.createTexture();
+    if (!texture) {
+      throw new Error("[heatmap] Failed to create WebGL texture.");
+    }
+    gl.bindTexture(gl.TEXTURE_2D, texture);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    return texture;
+  }
+
+  /** 按当前画布尺寸重分配 alpha 纹理。宽高至少为 1，避免空纹理报错。 */
+  private _resizeAlphaTexture(): void {
+    const gl = this.gl;
+    const width = Math.max(this._width, 1);
+    const height = Math.max(this._height, 1);
     gl.bindTexture(gl.TEXTURE_2D, this.alphaTexture);
     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, width, height, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
   }
 
-  /**
-   * 渲染全部数据
-   * @param data - 数据封装
-   */
-  public renderAll(data: any): void {
-    this._max = data.max;
-    this._min = data.min;
-
-    const points = [];
-    const radi = data.radi;
-    const store = data.data;
-
-    for (const x in store) {
-      for (const y in store[x]!) {
-        points.push(Number(x), Number(y), store[x]![y]!, radi[x]![y]!);
-      }
-    }
-
-    this._draw(points);
-  }
-
-  /**
-   * 渲染部分数据
-   * @param data - 数据增量
-   */
-  public renderPartial(data: any): void {
-    this._max = data.max;
-    this._min = data.min;
-
-    const points = [];
-    for (const point of data.data) {
-      points.push(point.x, point.y, point.value, point.radius);
-    }
-    // 注意：WebGL 增量渲染需要混合到现有纹理，这里简化为重新绘制所有（或保存状态）
-    // 为了真实的高性能，通常推荐重新上传受影响的数据
-    this._draw(points, true);
-  }
-
-  /**
-   * 核心绘制流程
-   */
-  private _draw(points: number[], partial: boolean = false): void {
+  /** 编译点绘制 program，并缓存 location。 */
+  private _createPointProgram(): PointProgram {
+    const program = this._createProgram(VERTEX_SHADER_POINT, FRAGMENT_SHADER_POINT);
     const gl = this.gl;
+    return {
+      program,
+      aPosition: gl.getAttribLocation(program, "a_position"),
+      aIntensity: gl.getAttribLocation(program, "a_intensity"),
+      aRadius: gl.getAttribLocation(program, "a_radius"),
+      uResolution: gl.getUniformLocation(program, "u_resolution"),
+      uBlur: gl.getUniformLocation(program, "u_blur")
+    };
+  }
 
-    // --- 第一步：绘制点到 Alpha 纹理 ---
+  /** 编译全屏上色 program，并缓存 location。 */
+  private _createColorizeProgram(): ColorizeProgram {
+    const program = this._createProgram(VERTEX_SHADER_SCREEN, FRAGMENT_SHADER_COLORIZE);
+    const gl = this.gl;
+    return {
+      program,
+      aPosition: gl.getAttribLocation(program, "a_position"),
+      uAlphaTexture: gl.getUniformLocation(program, "u_alphaTexture"),
+      uPaletteTexture: gl.getUniformLocation(program, "u_paletteTexture"),
+      uOpacity: gl.getUniformLocation(program, "u_opacity"),
+      uMaxOpacity: gl.getUniformLocation(program, "u_maxOpacity"),
+      uMinOpacity: gl.getUniformLocation(program, "u_minOpacity"),
+      uUseGradientOpacity: gl.getUniformLocation(program, "u_useGradientOpacity")
+    };
+  }
+
+  /**
+   * 链接顶点/片元着色器。链接完成后删除 shader 对象以释放驱动内存。
+   */
+  private _createProgram(vsSource: string, fsSource: string): WebGLProgram {
+    const gl = this.gl;
+    const vs = this._compileShader(vsSource, gl.VERTEX_SHADER);
+    const fs = this._compileShader(fsSource, gl.FRAGMENT_SHADER);
+    const program = gl.createProgram();
+    if (!program) {
+      throw new Error("[heatmap] Failed to create WebGL program.");
+    }
+    gl.attachShader(program, vs);
+    gl.attachShader(program, fs);
+    gl.linkProgram(program);
+    gl.deleteShader(vs);
+    gl.deleteShader(fs);
+    if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
+      throw new Error("[heatmap] Program link error: " + gl.getProgramInfoLog(program));
+    }
+    return program;
+  }
+
+  /** 编译单个着色器，失败时带上 driver info 抛错。 */
+  private _compileShader(source: string, type: number): WebGLShader {
+    const gl = this.gl;
+    const shader = gl.createShader(type);
+    if (!shader) {
+      throw new Error("[heatmap] Failed to create WebGL shader.");
+    }
+    gl.shaderSource(shader, source);
+    gl.compileShader(shader);
+    if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+      const info = gl.getShaderInfoLog(shader);
+      gl.deleteShader(shader);
+      throw new Error("[heatmap] Shader compile error: " + info);
+    }
+    return shader;
+  }
+
+  /** 将渐变烘焙为 256×1 调色板并上传到 `paletteTexture`。 */
+  private _updatePalette(gradient: Record<number, string>): void {
+    const gl = this.gl;
+    const palette = createColorPalette(gradient);
+    gl.bindTexture(gl.TEXTURE_2D, this.paletteTexture);
+    gl.texImage2D(
+      gl.TEXTURE_2D,
+      0,
+      gl.RGBA,
+      256,
+      1,
+      0,
+      gl.RGBA,
+      gl.UNSIGNED_BYTE,
+      new Uint8Array(palette.buffer, palette.byteOffset, palette.byteLength)
+    );
+  }
+
+  /**
+   * 交错顶点：`x, y, intensity, radius`。
+   * intensity 已按 min/max 归一化，下限 0.01，与 Canvas2D 的 globalAlpha 一致。
+   */
+  private _toVertexData(points: HeatmapRenderPoint[]): Float32Array {
+    const range = this._max - this._min || 1;
+    const out = new Float32Array(points.length * 4);
+    for (let i = 0; i < points.length; i++) {
+      const point = points[i]!;
+      const offset = i * 4;
+      out[offset] = point.x;
+      out[offset + 1] = point.y;
+      out[offset + 2] = Math.max((Math.min(point.value, this._max) - this._min) / range, 0.01);
+      out[offset + 3] = point.radius;
+    }
+    return out;
+  }
+
+  /**
+   * 两趟绘制：FBO 上累加点 alpha（`partial` 时不清空），再上色到默认帧缓冲。
+   *
+   * @param points 待绘制的点
+   * @param partial 为 true 时保留已有 alpha 纹理
+   */
+  private _draw(points: HeatmapRenderPoint[], partial: boolean): void {
+    if (this._width <= 0 || this._height <= 0) return;
+
+    const gl = this.gl;
+    const width = this._width;
+    const height = this._height;
+
     gl.bindFramebuffer(gl.FRAMEBUFFER, this.framebuffer);
     gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, this.alphaTexture, 0);
+    if (gl.checkFramebufferStatus(gl.FRAMEBUFFER) !== gl.FRAMEBUFFER_COMPLETE) {
+      gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+      return;
+    }
+    gl.viewport(0, 0, width, height);
 
+    // Pass 1：径向点以 source-over 叠到 alpha 纹理（与 Canvas2D 默认合成一致，不是加法）
     if (!partial) {
       gl.clearColor(0, 0, 0, 0);
       gl.clear(gl.COLOR_BUFFER_BIT);
     }
 
     gl.enable(gl.BLEND);
-    gl.blendFunc(gl.ONE, gl.ONE); // 加法混合
+    gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
+    gl.useProgram(this.pointProgram.program);
+    gl.uniform2f(this.pointProgram.uResolution, width, height);
+    gl.uniform1f(this.pointProgram.uBlur, this._blur);
 
-    gl.useProgram(this.pointProgram);
-
-    const uResolution = gl.getUniformLocation(this.pointProgram, "u_resolution");
-    gl.uniform2f(uResolution, this._width, this._height);
-
-    const uBlur = gl.getUniformLocation(this.pointProgram, "u_blur");
-    gl.uniform1f(uBlur, this._blur);
-
+    const vertices = this._toVertexData(points);
     gl.bindBuffer(gl.ARRAY_BUFFER, this.pointBuffer);
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(points), gl.STREAM_DRAW);
+    gl.bufferData(gl.ARRAY_BUFFER, vertices, gl.STREAM_DRAW);
+    gl.enableVertexAttribArray(this.pointProgram.aPosition);
+    gl.vertexAttribPointer(this.pointProgram.aPosition, 2, gl.FLOAT, false, 16, 0);
+    gl.enableVertexAttribArray(this.pointProgram.aIntensity);
+    gl.vertexAttribPointer(this.pointProgram.aIntensity, 1, gl.FLOAT, false, 16, 8);
+    gl.enableVertexAttribArray(this.pointProgram.aRadius);
+    gl.vertexAttribPointer(this.pointProgram.aRadius, 1, gl.FLOAT, false, 16, 12);
+    gl.drawArrays(gl.POINTS, 0, points.length);
 
-    const aPosition = gl.getAttribLocation(this.pointProgram, "a_position");
-    gl.enableVertexAttribArray(aPosition);
-    gl.vertexAttribPointer(aPosition, 2, gl.FLOAT, false, 16, 0);
-
-    const aIntensity = gl.getAttribLocation(this.pointProgram, "a_intensity");
-    gl.enableVertexAttribArray(aIntensity);
-    gl.vertexAttribPointer(aIntensity, 1, gl.FLOAT, false, 16, 8);
-
-    const aRadius = gl.getAttribLocation(this.pointProgram, "a_radius");
-    gl.enableVertexAttribArray(aRadius);
-    gl.vertexAttribPointer(aRadius, 1, gl.FLOAT, false, 16, 12);
-
-    gl.drawArrays(gl.POINTS, 0, points.length / 4);
-
-    // --- 第二步：将 Alpha 纹理着色并绘制到屏幕 ---
+    // Pass 2：直接写入上色结果，不再混合。
+    // SRC_ALPHA 混合会把 RGB 再乘一次 alpha，低透明的蓝晕会被乘没。
     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+    gl.viewport(0, 0, width, height);
+    gl.disable(gl.BLEND);
     gl.clearColor(0, 0, 0, 0);
     gl.clear(gl.COLOR_BUFFER_BIT);
+    gl.useProgram(this.colorizeProgram.program);
 
-    gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
-
-    gl.useProgram(this.colorizeProgram);
-
-    const uAlphaTexture = gl.getUniformLocation(this.colorizeProgram, "u_alphaTexture");
     gl.activeTexture(gl.TEXTURE0);
     gl.bindTexture(gl.TEXTURE_2D, this.alphaTexture);
-    gl.uniform1i(uAlphaTexture, 0);
-
-    const uPaletteTexture = gl.getUniformLocation(this.colorizeProgram, "u_paletteTexture");
+    gl.uniform1i(this.colorizeProgram.uAlphaTexture, 0);
     gl.activeTexture(gl.TEXTURE1);
     gl.bindTexture(gl.TEXTURE_2D, this.paletteTexture);
-    gl.uniform1i(uPaletteTexture, 1);
-
-    const uOpacity = gl.getUniformLocation(this.colorizeProgram, "u_opacity");
-    gl.uniform1f(uOpacity, this._opacity / 255);
-    const uMaxOpacity = gl.getUniformLocation(this.colorizeProgram, "u_maxOpacity");
-    gl.uniform1f(uMaxOpacity, this._maxOpacity / 255);
-    const uMinOpacity = gl.getUniformLocation(this.colorizeProgram, "u_minOpacity");
-    gl.uniform1f(uMinOpacity, this._minOpacity / 255);
-    const uUseGradientOpacity = gl.getUniformLocation(this.colorizeProgram, "u_useGradientOpacity");
-    gl.uniform1i(uUseGradientOpacity, this._useGradientOpacity ? 1 : 0);
+    gl.uniform1i(this.colorizeProgram.uPaletteTexture, 1);
+    gl.uniform1f(this.colorizeProgram.uOpacity, this._opacity / 255);
+    gl.uniform1f(this.colorizeProgram.uMaxOpacity, this._maxOpacity / 255);
+    gl.uniform1f(this.colorizeProgram.uMinOpacity, this._minOpacity / 255);
+    gl.uniform1i(this.colorizeProgram.uUseGradientOpacity, this._useGradientOpacity ? 1 : 0);
 
     gl.bindBuffer(gl.ARRAY_BUFFER, this.quadBuffer);
-    const aScreenPos = gl.getAttribLocation(this.colorizeProgram, "a_position");
-    gl.enableVertexAttribArray(aScreenPos);
-    gl.vertexAttribPointer(aScreenPos, 2, gl.FLOAT, false, 0, 0);
-
+    gl.enableVertexAttribArray(this.colorizeProgram.aPosition);
+    gl.vertexAttribPointer(this.colorizeProgram.aPosition, 2, gl.FLOAT, false, 0, 0);
     gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
-    gl.disable(gl.BLEND);
-  }
-
-  /**
-   * 获取某点数值
-   */
-  public getValueAt(point: { x: number; y: number }): number {
-    const gl = this.gl;
-    const pixels = new Uint8Array(4);
-
-    // 从 Alpha 纹理读取
-    gl.bindFramebuffer(gl.FRAMEBUFFER, this.framebuffer);
-    gl.readPixels(point.x, this._height - point.y, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
-    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-
-    const alpha = pixels[3]! / 255;
-    return Math.round(alpha * (this._max - this._min) + this._min);
-  }
-
-  /**
-   * 获取 DataURL
-   */
-  public getDataURL(): string {
-    return this.canvas.toDataURL();
   }
 }
-
-// --- 着色器源码 ---
-
-const vertexShaderPoint = `
-  attribute vec2 a_position;
-  attribute float a_intensity;
-  attribute float a_radius;
-  varying float v_intensity;
-  varying float v_radius;
-  uniform vec2 u_resolution;
-  void main() {
-    vec2 clipSpace = (a_position / u_resolution) * 2.0 - 1.0;
-    gl_Position = vec4(clipSpace * vec2(1, -1), 0, 1);
-    gl_PointSize = a_radius * 2.0;
-    v_intensity = a_intensity;
-    v_radius = a_radius;
-  }
-`;
-
-const fragmentShaderPoint = `
-  precision mediump float;
-  varying float v_intensity;
-  varying float v_radius;
-  uniform float u_blur;
-  void main() {
-    float dist = distance(gl_PointCoord, vec2(0.5));
-    if (dist > 0.5) discard;
-    
-    // 实现径向模糊
-    float alpha = 1.0 - smoothstep(0.5 * u_blur, 0.5, dist);
-    gl_FragColor = vec4(0, 0, 0, alpha * v_intensity);
-  }
-`;
-
-const vertexShaderScreen = `
-  attribute vec2 a_position;
-  varying vec2 v_texCoord;
-  void main() {
-    gl_Position = vec4(a_position, 0, 1);
-    v_texCoord = a_position * 0.5 + 0.5;
-  }
-`;
-
-const fragmentShaderColorize = `
-  precision mediump float;
-  varying vec2 v_texCoord;
-  uniform sampler2D u_alphaTexture;
-  uniform sampler2D u_paletteTexture;
-  uniform float u_opacity;
-  uniform float u_maxOpacity;
-  uniform float u_minOpacity;
-  uniform bool u_useGradientOpacity;
-
-  void main() {
-    float alpha = texture2D(u_alphaTexture, v_texCoord).a;
-    if (alpha <= 0.0) {
-      discard;
-    }
-
-    vec4 color = texture2D(u_paletteTexture, vec2(alpha, 0.5));
-    
-    float finalAlpha;
-    if (u_opacity > 0.0) {
-      finalAlpha = u_opacity;
-    } else {
-      finalAlpha = clamp(alpha, u_minOpacity, u_maxOpacity);
-    }
-
-    if (u_useGradientOpacity) {
-      gl_FragColor = vec4(color.rgb, color.a);
-    } else {
-      gl_FragColor = vec4(color.rgb, finalAlpha);
-    }
-  }
-`;
