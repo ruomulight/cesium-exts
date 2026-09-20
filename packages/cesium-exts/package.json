@@ -1,6 +1,6 @@
 {
   "name": "cesium-exts",
-  "version": "1.0.0",
+  "version": "1.0.099",
   "description": "Cesium-exts 扩展引擎核心库,基于 cesium v1.140.1开发",
   "type": "module",
   "main": "index.ts",

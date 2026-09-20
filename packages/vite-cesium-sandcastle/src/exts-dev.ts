@@ -1,17 +1,17 @@
 import { existsSync, readFileSync, realpathSync } from "node:fs";
-import { writeFile } from "node:fs/promises";
 import { createRequire } from "node:module";
 import { dirname, join, resolve } from "node:path";
 import { normalizePath, type Plugin, type ResolvedConfig, type ViteDevServer } from "vite";
 
-/** iframe importmap 中 cesium-exts 地址的占位符。 */
-export const CESIUM_EXTS_PLACEHOLDER = "__CESIUM_EXTS_URL__";
+import {
+  CESIUM_EXTS_ENTRY_NAME,
+  CESIUM_EXTS_HMR_EVENT,
+  CESIUM_EXTS_PLACEHOLDER,
+  registerBuildEntry,
+  toFsUrl
+} from "./shared.ts";
 
-/** 库源码变更后通知示例应用重跑 iframe 的 HMR 事件名。 */
-export const CESIUM_EXTS_HMR_EVENT = "cesium-exts:update";
-
-/** 生产构建时注册的独立入口名，对应 `js/cesium-exts.[hash].js`。 */
-const CESIUM_EXTS_ENTRY_NAME = "cesium-exts";
+export { CESIUM_EXTS_HMR_EVENT, CESIUM_EXTS_PLACEHOLDER };
 
 export interface CesiumExtsDevOptions {
   /**
@@ -19,12 +19,6 @@ export interface CesiumExtsDevOptions {
    * @default "__CESIUM_EXTS_URL__"
    */
   placeholder?: string;
-
-  /**
-   * 生产构建里 `bucket.html` 的相对路径，用于回写真实 chunk URL。
-   * @default "templates/bucket.html"
-   */
-  bucketHtmlPath?: string;
 }
 
 interface ExtsLocation {
@@ -37,17 +31,16 @@ interface ExtsLocation {
  *
  * - 把 `.glsl` 编译为内存 ES module
  * - 将库内 `import … from "cesium"` 改写为 `globalThis.Cesium`，避免第二份引擎
- * - 替换 importmap 占位符；开发走 `/@fs` 源码，生产走独立构建入口
+ * - 开发期替换 importmap 占位符为 `/@fs` 源码地址
+ * - 将库注册为独立构建入口；生产环境的 `bucket.html` 由 sandcastle 插件统一回写
  * - 监听库源码变更，通知示例应用重跑预览 iframe
  */
-export default function cesiumExtsDev(options: CesiumExtsDevOptions = {}): Plugin {
+export function cesiumExtsDev(options: CesiumExtsDevOptions = {}): Plugin {
   const placeholder = options.placeholder ?? CESIUM_EXTS_PLACEHOLDER;
-  const bucketHtmlPath = options.bucketHtmlPath ?? "templates/bucket.html";
 
   const ctx: {
     config?: ResolvedConfig;
     location?: ExtsLocation;
-    builtFileName?: string;
   } = {};
 
   function getLocation(root: string): ExtsLocation {
@@ -58,13 +51,13 @@ export default function cesiumExtsDev(options: CesiumExtsDevOptions = {}): Plugi
   }
 
   return {
-    name: "vite-cesium-exts-dev",
+    name: "vite-cesium-sandcastle:exts-dev",
     enforce: "pre",
 
     config(userConfig) {
       const root = userConfig.root ? resolve(userConfig.root) : process.cwd();
       const { entry } = getLocation(root);
-      console.info(`[vite-cesium-exts-dev] source ${normalizePath(entry)}`);
+      console.info(`[vite-cesium-sandcastle:exts-dev] source ${normalizePath(entry)}`);
 
       return {
         optimizeDeps: {
@@ -82,7 +75,7 @@ export default function cesiumExtsDev(options: CesiumExtsDevOptions = {}): Plugi
         return;
       }
 
-      registerBuildEntry(resolvedConfig, location.entry);
+      registerBuildEntry(resolvedConfig, CESIUM_EXTS_ENTRY_NAME, location.entry);
     },
 
     resolveId(id: string, importer?: string) {
@@ -96,7 +89,7 @@ export default function cesiumExtsDev(options: CesiumExtsDevOptions = {}): Plugi
       if (id.startsWith("\0") && id.endsWith(".glsl.js")) {
         const glslPath = id.slice(1).replace(/\.glsl.js$/, ".glsl");
         if (!existsSync(glslPath)) {
-          this.error(`[vite-cesium-exts-dev] .glsl file not found: ${glslPath}`);
+          this.error(`[vite-cesium-sandcastle:exts-dev] .glsl file not found: ${glslPath}`);
         }
         return {
           code: `export default ${JSON.stringify(readFileSync(glslPath, "utf-8"))};`,
@@ -156,30 +149,6 @@ export default function cesiumExtsDev(options: CesiumExtsDevOptions = {}): Plugi
 
       server.ws.send({ type: "custom", event: CESIUM_EXTS_HMR_EVENT });
       return [];
-    },
-
-    writeBundle(_options, bundle) {
-      ctx.builtFileName = findEntryFileName(bundle, CESIUM_EXTS_ENTRY_NAME);
-    },
-
-    async closeBundle() {
-      if (!ctx.config || ctx.config.command !== "build") {
-        return;
-      }
-
-      const distBucketHtml = resolve(ctx.config.root, ctx.config.build.outDir, bucketHtmlPath);
-      if (!existsSync(distBucketHtml)) {
-        return;
-      }
-
-      if (!ctx.builtFileName) {
-        console.warn("[vite-cesium-exts-dev] cesium-exts entry chunk not found");
-        return;
-      }
-
-      const url = toPublicUrl(ctx.builtFileName, ctx.config.base);
-      const content = readFileSync(distBucketHtml, "utf-8").replaceAll(placeholder, url);
-      await writeFile(distBucketHtml, content, "utf-8");
     }
   };
 }
@@ -191,7 +160,7 @@ function resolveCesiumExtsLocation(root: string): ExtsLocation {
   const entry = join(pkgRoot, "index.ts");
 
   if (!existsSync(entry)) {
-    throw new Error(`[vite-cesium-exts-dev] cesium-exts entry not found: ${entry}`);
+    throw new Error(`[vite-cesium-sandcastle:exts-dev] cesium-exts entry not found: ${entry}`);
   }
 
   return { entry, pkgRoot };
@@ -212,18 +181,6 @@ function isCesiumExtsFile(file: string, pkgRoot: string): boolean {
   const nFile = normalizePath(file).toLowerCase();
   const nRoot = normalizePath(pkgRoot).toLowerCase();
   return nFile === nRoot || nFile.startsWith(`${nRoot}/`);
-}
-
-function toFsUrl(filePath: string): string {
-  return `/@fs/${normalizePath(filePath)}`;
-}
-
-function toPublicUrl(fileName: string, base: string): string {
-  if (base === "" || base === "./") {
-    return `/${fileName}`;
-  }
-  const prefix = base.endsWith("/") ? base : `${base}/`;
-  return `${prefix}${fileName}`.replace(/\/{2,}/g, "/");
 }
 
 function watchCesiumExts(server: ViteDevServer, location: ExtsLocation): void {
@@ -273,36 +230,4 @@ function namedImportsToDestructure(spec: string): string {
     return "";
   }
   return `const { ${bindings.join(", ")} } = globalThis.Cesium;`;
-}
-
-function registerBuildEntry(config: ResolvedConfig, entryPath: string): void {
-  const targetOptions = config.build.rolldownOptions ?? config.build.rollupOptions;
-  if (!targetOptions) {
-    return;
-  }
-
-  const inputs = targetOptions.input;
-
-  if (inputs === undefined) {
-    targetOptions.input = {
-      index: resolve(config.root, "index.html"),
-      [CESIUM_EXTS_ENTRY_NAME]: entryPath
-    };
-    return;
-  }
-
-  if (typeof inputs !== "object" || Array.isArray(inputs)) {
-    return;
-  }
-
-  if (!(CESIUM_EXTS_ENTRY_NAME in inputs)) {
-    inputs[CESIUM_EXTS_ENTRY_NAME] = entryPath;
-  }
-}
-
-function findEntryFileName(bundle: Record<string, { type: string; isEntry?: boolean; name?: string; fileName: string }>, entryName: string): string | undefined {
-  const chunk = Object.values(bundle).find(
-    item => item.type === "chunk" && item.isEntry === true && item.name === entryName
-  );
-  return chunk?.fileName;
 }

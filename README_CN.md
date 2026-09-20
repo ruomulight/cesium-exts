@@ -19,8 +19,7 @@
 ├── packages/
 │   ├── cesium-exts/              # 扩展库核心（RadarScanPrimitive / HeatLayer / WindLayer / cesiumUtils）
 │   ├── vite-cesium-plugin/       # Vite 插件：Cesium 静态资源托管、CESIUM_BASE_URL 注入、产物拷贝
-│   ├── vite-cesium-sandcastle/   # Vite 插件：替换 HTML 中的 __CESIUM_BASE_URL__ 占位符
-│   └── vite-cesium-exts-dev/     # Vite 插件：开发期把 .glsl 着色器编译为内存 ES module（含 HMR）
+│   └── vite-cesium-sandcastle/   # Vite 插件：Sandcastle 运行时（占位符 / bucket 模板）+ cesium-exts 源码直连
 ├── tooling/
 │   ├── config-typescript/        # @repo/config-typescript：base / node / react 预设
 │   ├── config-eslint/            # @repo/config-eslint：base / react 扁平配置
@@ -113,12 +112,17 @@ export default defineConfig({
 ### 2. Sandcastle 模板占位符替换
 
 ```ts
-import cesiumSandcastle from "vite-cesium-sandcastle";
+import { cesiumExtsDev, cesiumSandcastle } from "vite-cesium-sandcastle";
 
 export default defineConfig({
-  plugins: [cesiumSandcastle({ placeholder: "__CESIUM_BASE_URL__", cesiumBaseUrl: "/cesium/" })]
+  plugins: [
+    cesiumExtsDev(),
+    cesiumSandcastle({ placeholder: "__CESIUM_BASE_URL__", cesiumBaseUrl: "/cesium/" })
+  ]
 });
 ```
+
+`cesiumSandcastle()` 负责 Sandcastle iframe 模板（`__CESIUM_BASE_URL__`、Tweakpane、`bucket.html`）。`cesiumExtsDev()` 可选：把 `cesium-exts` 源码直连到预览 iframe（GLSL 模块、Cesium 单例改写、HMR）。
 
 ### 3. 使用扩展库
 

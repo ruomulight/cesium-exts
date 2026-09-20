@@ -20,8 +20,7 @@ Based on **pnpm workspace + Turborepo + TypeScript**, this is a Cesium extension
 ├── packages/
 │   ├── cesium-exts/              # Core extension library (RadarScanPrimitive / HeatLayer / WindLayer / cesiumUtils)
 │   ├── vite-cesium-plugin/       # Vite plugin: Cesium static asset hosting, CESIUM_BASE_URL injection, artifact copying
-│   ├── vite-cesium-sandcastle/   # Vite plugin: Replaces __CESIUM_BASE_URL__ placeholder in HTML
-│   └── vite-cesium-exts-dev/     # Vite plugin: Compiles .glsl shaders into in-memory ES modules during development (with HMR)
+│   └── vite-cesium-sandcastle/   # Vite plugin: Sandcastle runtime (placeholders / bucket templates) + cesium-exts source linking
 ├── tooling/
 │   ├── config-typescript/        # @repo/config-typescript: base / node / react presets
 │   ├── config-eslint/            # @repo/config-eslint: base / react flat configs
@@ -114,12 +113,17 @@ export default defineConfig({
 ### 2. Sandcastle Template Placeholder Replacement
 
 ```ts
-import cesiumSandcastle from "vite-cesium-sandcastle";
+import { cesiumExtsDev, cesiumSandcastle } from "vite-cesium-sandcastle";
 
 export default defineConfig({
-  plugins: [cesiumSandcastle({ placeholder: "__CESIUM_BASE_URL__", cesiumBaseUrl: "/cesium/" })]
+  plugins: [
+    cesiumExtsDev(),
+    cesiumSandcastle({ placeholder: "__CESIUM_BASE_URL__", cesiumBaseUrl: "/cesium/" })
+  ]
 });
 ```
+
+`cesiumSandcastle()` handles Sandcastle iframe templates (`__CESIUM_BASE_URL__`, Tweakpane, `bucket.html`). `cesiumExtsDev()` is optional: it source-links `cesium-exts` into the preview iframe (GLSL modules, Cesium singleton rewrite, HMR).
 
 ### 3. Using the Extension Library
 

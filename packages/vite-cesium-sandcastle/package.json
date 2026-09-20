@@ -1,7 +1,7 @@
 {
   "name": "vite-cesium-sandcastle",
   "version": "1.0.0",
-  "description": "Vite 插件：在 HTML 中替换 Cesium 基础路径占位符（Sandcastle 模板兼容）",
+  "description": "Vite 插件：Sandcastle 示例运行时（占位符、bucket 模板）以及 cesium-exts 源码直连（GLSL、Cesium 单例、HMR）",
   "type": "module",
   "main": "src/index.ts",
   "module": "src/index.ts",
@@ -20,7 +20,8 @@
     "vite",
     "plugin",
     "cesium",
-    "sandcastle"
+    "sandcastle",
+    "glsl"
   ],
   "license": "ISC",
   "dependencies": {

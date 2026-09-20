@@ -14,8 +14,7 @@
       用户代码中的 `import "tweakpane"` 等裸说明符解析到具体的 Runtime URL。
       必须在任何 module script 之前声明（Vite 的 preImportMapHook 通过正则
       扫描 HTML 验证顺序，注释里的字面 module-script 标签也会被匹配到，
-      因此注释中不要再出现 type="module" 字样）；vite-cesium-sandcastle 插件
-      会根据 dev / prod 环境把 __TWEAKPANE_URL__ 替换为正确的 URL。
+      因此注释中不要再出现 type="module" 字样）；      插件会根据 dev / prod 环境把 importmap 里的 Tweakpane 与 cesium-exts 占位符替换为正确 URL。
     -->
     <script type="importmap">
       {
