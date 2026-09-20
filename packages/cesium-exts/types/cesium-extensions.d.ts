@@ -10,13 +10,9 @@ import type { Geometry, Matrix4, Color, Cartesian3, Ray } from "cesium";
  */
 declare module "cesium" {
   /**
-   * Cesium 版本号
-   * 可通过 Cesium.globalThis.CESIUM_VERSION 访问
+   * Cesium 版本号。UMD 构建挂在 `Cesium.VERSION` 上。
    */
-  export namespace globalThis {
-    // Cesium 版本号
-    const CESIUM_VERSION: string;
-  }
+  export const VERSION: string;
 
   // ==================== 工具类 ====================
 

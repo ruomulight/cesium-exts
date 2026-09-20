@@ -14,7 +14,7 @@ import pkg from "../../package.json" with { type: "json" };
  * ```
  */
 export function cesiumVersion(): string {
-  return Cesium.globalThis.CESIUM_VERSION;
+  return Cesium.VERSION;
 }
 
 /**

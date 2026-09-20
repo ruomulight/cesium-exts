@@ -2,7 +2,7 @@ import * as Cesium from "cesium";
 import { cesiumUtils } from "cesium-exts";
 import { Pane } from "tweakpane";
 
-console.log(cesiumUtils.cesiumVersion());
+console.log(cesiumUtils.cesiumExtsVersion());
 
 const PARAMS = {
   background: { r: 255, g: 0, b: 55 },

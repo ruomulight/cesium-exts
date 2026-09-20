@@ -14,7 +14,6 @@
     "types"
   ],
   "scripts": {
-    "dev": "tsdown --watch",
     "build": "tsdown",
     "lint": "eslint ."
   },

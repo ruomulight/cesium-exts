@@ -62,19 +62,41 @@ function Bucket({ code, html, runNumber, highlightLine, appendConsole, resetCons
     resetRef.current = resetConsole;
   });
 
-  // --- Effect 1：用户点击"运行"时触发 iframe 重新加载 ---
-  useEffect(() => {
-    if (runNumber !== lastRunNumber.current && iframeBridge.current) {
-      clearTimeout(timeoutRef.current);
+  /** 重载预览 iframe，并在超时未就绪时强制重挂载。 */
+  const reloadSandbox = useCallback(() => {
+    clearTimeout(timeoutRef.current);
+    if (iframeBridge.current) {
       iframeBridge.current.sendMessage({ type: "reload" });
-      lastRunNumber.current = runNumber;
-
-      // 超时保护：若 30 秒后仍未收到 bucketReady，说明沙箱代码可能卡死，强制重置 iframe
-      timeoutRef.current = setTimeout(() => {
-        setIframeKey(k => k + 1);
-      }, EXECUTION_TIMEOUT_MS);
+    } else {
+      setIframeKey(k => k + 1);
     }
-  }, [runNumber]);
+    timeoutRef.current = setTimeout(() => {
+      setIframeKey(k => k + 1);
+    }, EXECUTION_TIMEOUT_MS);
+  }, []);
+
+  // --- Effect 1：用户点击「运行」时触发 iframe 重新加载 ---
+  useEffect(() => {
+    if (runNumber !== lastRunNumber.current) {
+      lastRunNumber.current = runNumber;
+      reloadSandbox();
+    }
+  }, [runNumber, reloadSandbox]);
+
+  // --- Effect 1b：cesium-exts 源码变更后自动重跑当前示例 ---
+  useEffect(() => {
+    const hot = import.meta.hot;
+    if (!hot) return;
+
+    const onLibraryUpdate = () => {
+      reloadSandbox();
+    };
+
+    hot.on("cesium-exts:update", onLibraryUpdate);
+    return () => {
+      hot.off("cesium-exts:update", onLibraryUpdate);
+    };
+  }, [reloadSandbox]);
 
   // --- Effect 2：注册消息处理器（仅一次） ---
   // 所有回调标识和 code/html 均通过 ref 读取，因此依赖数组为空，

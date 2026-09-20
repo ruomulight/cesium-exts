@@ -1,13 +1,20 @@
 import babel from "@rolldown/plugin-babel";
 import tailwindcss from "@tailwindcss/vite";
 import react, { reactCompilerPreset } from "@vitejs/plugin-react";
+import { realpathSync } from "node:fs";
+import { createRequire } from "node:module";
+import { dirname, join } from "node:path";
 import path from "path";
-import { type BuildEnvironmentOptions, type ConfigEnv, defineConfig, loadEnv } from "vite";
+import { normalizePath, type BuildEnvironmentOptions, type ConfigEnv, defineConfig, loadEnv } from "vite";
 import viteCesiumExtsDev from "vite-cesium-exts-dev";
 import CesiumPlugin from "vite-cesium-plugin";
 import cesiumSandcastle from "vite-cesium-sandcastle";
 
 import pkg from "./package.json" with { type: "json" };
+
+const require = createRequire(import.meta.url);
+const cesiumExtsEntry = join(dirname(realpathSync(require.resolve("cesium-exts/package.json"))), "index.ts");
+const cesiumExtsDevUrl = `/@fs/${normalizePath(cesiumExtsEntry)}`;
 
 export default defineConfig((mode: ConfigEnv) => {
   // 手动加载环境变量
@@ -29,13 +36,20 @@ export default defineConfig((mode: ConfigEnv) => {
         // 插件会在 writeBundle 钩子里把 templates/bucket.html 中
         // 的 `../src/util/bucket-client.ts` 引用替换为真实的 chunk 文件名
         bucketClientEntry: "src/util/bucket-client.ts"
-      })
+      }),
+      {
+        name: "cesium-exts-importmap",
+        transformIndexHtml: {
+          order: "pre",
+          handler(html) {
+            return html.replaceAll("__CESIUM_EXTS_URL__", `${cesiumExtsDevUrl}?t=${Date.now()}`);
+          }
+        }
+      }
     ],
     optimizeDeps: {
-      // 预打包 cesium 与 cesium-exts，使 bucket iframe 内的裸说明符 import
-      // （通过 importmap 映射到 /node_modules/.vite/deps/）能在浏览器侧拿到
-      // 一个完整、含所有嵌套依赖的 ES Module 产物
-      include: []
+      // cesium-exts 由 vite-cesium-exts-dev 以源码直连，禁止预打包以免改库看不到效果
+      exclude: ["cesium-exts"]
     },
     resolve: {
       alias: {

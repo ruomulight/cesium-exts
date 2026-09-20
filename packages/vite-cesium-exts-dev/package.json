@@ -1,7 +1,7 @@
 {
   "name": "vite-cesium-exts-dev",
   "version": "1.0.0",
-  "description": "Vite 插件：为 cesium-exts 提供开发模式下的内存构建（GLSL 着色器、Web Worker）",
+  "description": "Vite 插件：开发期把 cesium-exts 源码直连到示例 iframe（GLSL、Cesium 单例、改库自动重跑）",
   "type": "module",
   "main": "src/index.ts",
   "module": "src/index.ts",
