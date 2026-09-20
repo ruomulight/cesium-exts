@@ -1,7 +1,7 @@
 import { defineConfig } from "tsdown";
 
 export default defineConfig({
-  // 入口文件：库根目录的 index.ts（对外导出 RadarScanPrimitive / cesiumUtils / HeatLayer / WindLayer）
+  // 入口文件：库根目录的 index.ts
   entry: ["index.ts"],
 
   // 双格式输出：ESM + CJS

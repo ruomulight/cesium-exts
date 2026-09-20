@@ -18,7 +18,7 @@ Based on **pnpm workspace + Turborepo + TypeScript**, this is a Cesium extension
 │       ├── templates/bucket.html # Host template for the preview iframe
 │       └── env/                  # .env / .env.development / .env.production
 ├── packages/
-│   ├── cesium-exts/              # Core extension library (RadarScanPrimitive / HeatLayer / WindLayer / cesiumUtils)
+│   ├── cesium-exts/              # Core extension library (RadarScanPrimitive / camera utils / HeatLayer / WindLayer)
 │   ├── vite-cesium-plugin/       # Vite plugin: Cesium static asset hosting, CESIUM_BASE_URL injection, artifact copying
 │   └── vite-cesium-sandcastle/   # Vite plugin: Sandcastle runtime (placeholders / bucket templates) + cesium-exts source linking
 ├── tooling/
@@ -129,19 +129,19 @@ export default defineConfig({
 
 ```ts
 import * as Cesium from "cesium";
-import { cesiumUtils, RadarScanPrimitive } from "cesium-exts";
+import { flyToTarget, RadarScanPrimitive } from "cesium-exts";
 
 const viewer = new Cesium.Viewer("cesiumContainer");
 
-const radar = new RadarScanPrimitive(viewer.scene, {
-  positions: [{ lon: 116.39, lat: 39.91 }],
+const radar = new RadarScanPrimitive(viewer, {
+  positions: [{ longitude: 116.39, latitude: 39.91 }],
   radius: 1500,
   color: "#99ff00",
   speed: 1.0,
   scanAlpha: 0.8
 });
 
-cesiumUtils.flyToTarget(viewer, { targetPosition: Cesium.Cartesian3.fromDegrees(116.39, 39.91) });
+flyToTarget(viewer, { targetPosition: Cesium.Cartesian3.fromDegrees(116.39, 39.91) });
 ```
 
 > `HeatLayer` and `WindLayer` are currently placeholder implementations; APIs are unstable, please do not rely on them in production.

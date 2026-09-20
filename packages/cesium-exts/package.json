@@ -1,20 +1,29 @@
 {
   "name": "cesium-exts",
-  "version": "1.0.099",
+  "version": "1.0.0",
   "description": "Cesium-exts 扩展引擎核心库,基于 cesium v1.140.1开发",
   "type": "module",
-  "main": "index.ts",
-  "module": "index.ts",
+  "main": "./index.ts",
+  "module": "./index.ts",
+  "types": "./index.ts",
+  "exports": {
+    ".": {
+      "types": "./index.ts",
+      "import": "./index.ts",
+      "default": "./index.ts"
+    },
+    "./package.json": "./package.json"
+  },
   "files": [
     "dist",
+    "src",
     "index.ts",
-    "Source",
-    "modules",
-    "Utils",
     "types"
   ],
+  "sideEffects": false,
   "scripts": {
     "build": "tsdown",
+    "check-types": "tsc -p tsconfig.json --noEmit",
     "lint": "eslint ."
   },
   "keywords": [

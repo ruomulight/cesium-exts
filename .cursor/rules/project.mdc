@@ -14,7 +14,9 @@ pnpm workspace + Turborepo + TypeScript 的 Cesium 扩展 monorepo。Node `>=22.
 - `tooling/*`：共享 tsconfig / ESLint / Prettier
 - 根目录只放编排与公共配置
 
-关键包：`cesium-exts`（RadarScanPrimitive / HeatLayer / WindLayer / cesiumUtils）、`vite-cesium-plugin`、`vite-cesium-sandcastle`。
+关键包：`cesium-exts`（RadarScanPrimitive / flyToTarget / HeatLayer / WindLayer）、`vite-cesium-plugin`、`vite-cesium-sandcastle`。
+
+`cesium-exts` 约定：named export；功能只从各自 `index.ts` 漏出；挂场景的对象用 `constructor(viewer, options)` 且必须有 `destroy()`；无状态方法放 `src/utils/<领域>/`，不要堆成单一工具对象。
 
 ## 依赖与构建
 

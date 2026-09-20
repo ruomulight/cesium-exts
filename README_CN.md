@@ -17,7 +17,7 @@
 │       ├── templates/bucket.html # 预览 iframe 的宿主模板
 │       └── env/                  # .env / .env.development / .env.production
 ├── packages/
-│   ├── cesium-exts/              # 扩展库核心（RadarScanPrimitive / HeatLayer / WindLayer / cesiumUtils）
+│   ├── cesium-exts/              # 扩展库核心（RadarScanPrimitive / camera 工具 / HeatLayer / WindLayer）
 │   ├── vite-cesium-plugin/       # Vite 插件：Cesium 静态资源托管、CESIUM_BASE_URL 注入、产物拷贝
 │   └── vite-cesium-sandcastle/   # Vite 插件：Sandcastle 运行时（占位符 / bucket 模板）+ cesium-exts 源码直连
 ├── tooling/
@@ -128,19 +128,19 @@ export default defineConfig({
 
 ```ts
 import * as Cesium from "cesium";
-import { cesiumUtils, RadarScanPrimitive } from "cesium-exts";
+import { flyToTarget, RadarScanPrimitive } from "cesium-exts";
 
 const viewer = new Cesium.Viewer("cesiumContainer");
 
-const radar = new RadarScanPrimitive(viewer.scene, {
-  positions: [{ lon: 116.39, lat: 39.91 }],
+const radar = new RadarScanPrimitive(viewer, {
+  positions: [{ longitude: 116.39, latitude: 39.91 }],
   radius: 1500,
   color: "#99ff00",
   speed: 1.0,
   scanAlpha: 0.8
 });
 
-cesiumUtils.flyToTarget(viewer, { targetPosition: Cesium.Cartesian3.fromDegrees(116.39, 39.91) });
+flyToTarget(viewer, { targetPosition: Cesium.Cartesian3.fromDegrees(116.39, 39.91) });
 ```
 
 > `HeatLayer` 与 `WindLayer` 目前仍是占位实现，API 未稳定，请勿在生产中依赖。

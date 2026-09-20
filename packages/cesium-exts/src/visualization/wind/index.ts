@@ -1,4 +1,4 @@
-class WindLayer {
+export class WindLayer {
   aa() {
     return 4;
   }
@@ -6,4 +6,3 @@ class WindLayer {
     return 5;
   }
 }
-export default WindLayer;
