@@ -1,7 +1,7 @@
 {
   "name": "vite-cesium-sandcastle",
   "version": "1.0.0",
-  "description": "Vite 插件：在 HTML 中替换 Cesium 基础路径占位符（Sandcastle 模板兼容）",
+  "description": "Vite 插件：Sandcastle iframe 运行时（占位符、bucket-client、Tweakpane）与 cesium-exts 源码直连",
   "type": "module",
   "main": "src/index.ts",
   "module": "src/index.ts",
