@@ -20,7 +20,8 @@ Based on **pnpm workspace + Turborepo + TypeScript**, this is a Cesium extension
 ├── packages/
 │   ├── cesium-exts/              # Core extension library (RadarScanPrimitive / HeatLayer / WindLayer / cesiumUtils)
 │   ├── vite-cesium-plugin/       # Vite plugin: Cesium static asset hosting, CESIUM_BASE_URL injection, artifact copying
-│   └── vite-cesium-sandcastle/   # Vite plugin: Sandcastle iframe runtime + cesium-exts source linking
+│   ├── vite-cesium-sandcastle/   # Vite plugin: Replaces __CESIUM_BASE_URL__ placeholder in HTML
+│   └── vite-cesium-exts-dev/     # Vite plugin: Compiles .glsl shaders into in-memory ES modules during development (with HMR)
 ├── tooling/
 │   ├── config-typescript/        # @repo/config-typescript: base / node / react presets
 │   ├── config-eslint/            # @repo/config-eslint: base / react flat configs
@@ -116,9 +117,7 @@ export default defineConfig({
 import cesiumSandcastle from "vite-cesium-sandcastle";
 
 export default defineConfig({
-  plugins: [
-    ...cesiumSandcastle({ placeholder: "__CESIUM_BASE_URL__", cesiumBaseUrl: "/cesium/" })
-  ]
+  plugins: [cesiumSandcastle({ placeholder: "__CESIUM_BASE_URL__", cesiumBaseUrl: "/cesium/" })]
 });
 ```
 

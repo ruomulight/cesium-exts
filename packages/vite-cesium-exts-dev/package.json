@@ -1,7 +1,7 @@
 {
-  "name": "vite-cesium-sandcastle",
+  "name": "vite-cesium-exts-dev",
   "version": "1.0.0",
-  "description": "Vite 插件：在 HTML 中替换 Cesium 基础路径占位符（Sandcastle 模板兼容）",
+  "description": "Vite 插件：开发期把 cesium-exts 源码直连到示例 iframe（GLSL、Cesium 单例、改库自动重跑）",
   "type": "module",
   "main": "src/index.ts",
   "module": "src/index.ts",
@@ -20,18 +20,14 @@
     "vite",
     "plugin",
     "cesium",
-    "sandcastle"
+    "glsl"
   ],
   "license": "ISC",
-  "dependencies": {
-    "fs-extra": "catalog:cesium-plugin"
-  },
   "devDependencies": {
-    "@repo/config-eslint": "workspace:*",
-    "@repo/config-typescript": "workspace:*",
-    "@types/fs-extra": "catalog:cesium-plugin",
-    "@types/node": "catalog:tooling",
     "eslint": "catalog:tooling",
+    "@repo/config-typescript": "workspace:*",
+    "@repo/config-eslint": "workspace:*",
+    "@types/node": "catalog:tooling",
     "typescript": "catalog:tooling"
   },
   "peerDependencies": {

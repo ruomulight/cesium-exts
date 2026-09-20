@@ -3,24 +3,6 @@ import type { Plugin, ResolvedConfig } from "vite";
 import fs from "fs-extra";
 import path from "node:path";
 
-import {
-  CESIUM_EXTS_ENTRY_NAME,
-  CESIUM_EXTS_HMR_EVENT,
-  CESIUM_EXTS_PLACEHOLDER,
-  createCesiumExtsDevPlugin,
-  resolveCesiumExtsLocation,
-  rewriteCesiumImports,
-  toFsUrl
-} from "./exts-dev.js";
-
-export {
-  CESIUM_EXTS_ENTRY_NAME,
-  CESIUM_EXTS_HMR_EVENT,
-  CESIUM_EXTS_PLACEHOLDER,
-  createCesiumExtsDevPlugin,
-  rewriteCesiumImports
-};
-
 /**
  * Vite/Rolldown `writeBundle` 钩子中 Bundle Chunk 的最小类型定义。
  *
@@ -106,7 +88,6 @@ type Bundle = Record<string, BundleItem>;
  * - 将构建后的 `bucket-client` Chunk 注入 `bucket.html`；
  * - 将 Sandcastle 模板复制到最终构建目录；
  * - 将 Tweakpane Runtime 文件复制到最终构建目录。
- * - 开发期把 `cesium-exts` 源码直连到 iframe（GLSL、Cesium 单例、改库自动重跑）。
  */
 export interface ViteCesiumSandcastleOptions {
   /**
@@ -243,22 +224,6 @@ export interface ViteCesiumSandcastleOptions {
    * ```
    */
   devTweakpaneUrl?: string;
-
-  /**
-   * iframe importmap 中 `cesium-exts` 的占位符。
-   *
-   * @default "__CESIUM_EXTS_URL__"
-   */
-  cesiumExtsPlaceholder?: string;
-
-  /**
-   * 是否启用 `cesium-exts` 源码直连。
-   *
-   * 关闭后不再注册库入口、改写 Cesium import，也不替换 importmap 中的库地址。
-   *
-   * @default true
-   */
-  enableCesiumExts?: boolean;
 }
 
 /**
@@ -376,29 +341,17 @@ const DEFAULT_DEV_TWEAKPANE_URL = "../node_modules/tweakpane/dist/tweakpane.min.
  *
  * export default defineConfig({
  *   plugins: [
- *     ...viteCesiumSandcastle({
+ *     viteCesiumSandcastle({
  *       cesiumBaseUrl: "/cesium/",
+ *       devCesiumBaseUrl: "http://localhost:8080/cesium/",
  *       bucketClientEntry: "src/util/bucket-client.ts",
+ *       bucketHtmlPath: "templates/bucket.html",
  *     }),
  *   ],
  * });
  * ```
  */
-export default function viteCesiumSandcastle(options: ViteCesiumSandcastleOptions = {}): Plugin[] {
-  const plugins: Plugin[] = [];
-
-  if (options.enableCesiumExts !== false) {
-    plugins.push(createCesiumExtsDevPlugin());
-  }
-
-  plugins.push(createSandcastlePlugin(options));
-  return plugins;
-}
-
-/**
- * Sandcastle iframe / 模板资源插件。
- */
-export function createSandcastlePlugin(options: ViteCesiumSandcastleOptions = {}): Plugin {
+export default function viteCesiumSandcastle(options: ViteCesiumSandcastleOptions = {}): Plugin {
   const {
     placeholder = "__CESIUM_BASE_URL__",
     cesiumBaseUrl = "/cesium/",
@@ -407,9 +360,7 @@ export function createSandcastlePlugin(options: ViteCesiumSandcastleOptions = {}
     bucketHtmlPath = "templates/bucket.html",
     tweakpanePlaceholder = DEFAULT_TWEAKPANE_PLACEHOLDER,
     tweakpaneUrl = DEFAULT_TWEAKPANE_URL,
-    devTweakpaneUrl = DEFAULT_DEV_TWEAKPANE_URL,
-    cesiumExtsPlaceholder = CESIUM_EXTS_PLACEHOLDER,
-    enableCesiumExts = true
+    devTweakpaneUrl = DEFAULT_DEV_TWEAKPANE_URL
   } = options;
 
   /**
@@ -546,18 +497,7 @@ export function createSandcastlePlugin(options: ViteCesiumSandcastleOptions = {}
 
         const finalTweakpaneUrl = isDev && devTweakpaneUrl ? devTweakpaneUrl : tweakpaneUrl;
 
-        let next = html.replaceAll(placeholder, finalBaseUrl).replaceAll(tweakpanePlaceholder, finalTweakpaneUrl);
-
-        if (isDev && enableCesiumExts) {
-          try {
-            const location = resolveCesiumExtsLocation(config?.root ?? process.cwd());
-            next = next.replaceAll(cesiumExtsPlaceholder, `${toFsUrl(location.entry)}?t=${Date.now()}`);
-          } catch {
-            // 未安装 cesium-exts 时保留占位符
-          }
-        }
-
-        return next;
+        return html.replaceAll(placeholder, finalBaseUrl).replaceAll(tweakpanePlaceholder, finalTweakpaneUrl);
       }
     },
 
@@ -616,9 +556,7 @@ export function createSandcastlePlugin(options: ViteCesiumSandcastleOptions = {}
           placeholder,
           cesiumBaseUrl,
           tweakpanePlaceholder,
-          tweakpaneUrl,
-          cesiumExtsPlaceholder,
-          enableCesiumExts
+          tweakpaneUrl
         });
       } catch (error) {
         console.error("[vite-cesium-sandcastle] Failed to process templates:", error);
@@ -704,27 +642,8 @@ async function rewriteBucketHtml(params: {
    * 生产环境 Tweakpane Runtime URL。
    */
   tweakpaneUrl: string;
-
-  /**
-   * iframe importmap 中 cesium-exts 的占位符。
-   */
-  cesiumExtsPlaceholder: string;
-
-  /**
-   * 是否替换 cesium-exts 的 importmap 地址。
-   */
-  enableCesiumExts: boolean;
 }): Promise<void> {
-  const {
-    distBucketHtml,
-    bundle,
-    placeholder,
-    cesiumBaseUrl,
-    tweakpanePlaceholder,
-    tweakpaneUrl,
-    cesiumExtsPlaceholder,
-    enableCesiumExts
-  } = params;
+  const { distBucketHtml, bundle, placeholder, cesiumBaseUrl, tweakpanePlaceholder, tweakpaneUrl } = params;
 
   /**
    * 模板不存在时直接跳过。
@@ -738,8 +657,7 @@ async function rewriteBucketHtml(params: {
   /**
    * 查找 bucket-client 的实际构建产物。
    */
-  const bucketClientPath = findEntryPath(bundle, BUCKET_CLIENT_ENTRY_NAME);
-  const cesiumExtsPath = enableCesiumExts ? findEntryPath(bundle, CESIUM_EXTS_ENTRY_NAME) : undefined;
+  const bucketClientPath = findBucketClientPath(bundle);
 
   /**
    * 读取构建产物中的 bucket.html。
@@ -767,10 +685,6 @@ async function rewriteBucketHtml(params: {
     content = content.replaceAll(BUCKET_CLIENT_SOURCE_REF, bucketClientPath);
   }
 
-  if (cesiumExtsPath) {
-    content = content.replaceAll(cesiumExtsPlaceholder, cesiumExtsPath);
-  }
-
   /**
    * 将修改后的 HTML 写回构建产物。
    */
@@ -794,18 +708,33 @@ async function rewriteBucketHtml(params: {
  * @returns
  * 当 Bundle 不存在或找不到对应 Entry 时返回 `undefined`。
  */
-function findEntryPath(bundle: Bundle | undefined, entryName: string): string | undefined {
+function findBucketClientPath(bundle: Bundle | undefined): string | undefined {
   if (!bundle) {
     return undefined;
   }
 
+  /**
+   * 查找由 `bucketClientEntry` 注入的 Entry Chunk。
+   */
   const chunk = Object.values(bundle).find(
-    (item): item is BundleChunk => item.type === "chunk" && item.isEntry === true && item.name === entryName
+    (item): item is BundleChunk =>
+      item.type === "chunk" && item.isEntry === true && item.name === BUCKET_CLIENT_ENTRY_NAME
   );
 
   if (!chunk) {
     return undefined;
   }
 
+  /**
+   * bucket.html 当前使用根路径加载 Chunk。
+   *
+   * 例如：
+   *
+   * ```text
+   * js/bucket-client.ABC123.js
+   *        ↓
+   * /js/bucket-client.ABC123.js
+   * ```
+   */
   return `/${chunk.fileName}`;
 }

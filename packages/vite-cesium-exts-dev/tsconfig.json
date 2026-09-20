@@ -1,0 +1,11 @@
+{
+  "extends": "@repo/config-typescript/node.json",
+  "compilerOptions": {
+    "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.tsbuildinfo",
+    "composite": true,
+    "noEmit": false,
+    "emitDeclarationOnly": true,
+    "erasableSyntaxOnly": true
+  },
+  "include": ["src/**/*.ts"]
+}

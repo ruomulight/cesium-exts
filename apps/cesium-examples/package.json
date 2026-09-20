@@ -50,6 +50,7 @@
     "sass": "1.101.0",
     "typescript": "catalog:tooling",
     "vite": "catalog:tooling",
+    "vite-cesium-exts-dev": "workspace:*",
     "vite-cesium-plugin": "workspace:*",
     "vite-cesium-sandcastle": "workspace:*"
   }

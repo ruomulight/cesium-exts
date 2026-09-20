@@ -19,7 +19,8 @@
 ├── packages/
 │   ├── cesium-exts/              # 扩展库核心（RadarScanPrimitive / HeatLayer / WindLayer / cesiumUtils）
 │   ├── vite-cesium-plugin/       # Vite 插件：Cesium 静态资源托管、CESIUM_BASE_URL 注入、产物拷贝
-│   └── vite-cesium-sandcastle/   # Vite 插件：Sandcastle iframe 运行时 + cesium-exts 源码直连
+│   ├── vite-cesium-sandcastle/   # Vite 插件：替换 HTML 中的 __CESIUM_BASE_URL__ 占位符
+│   └── vite-cesium-exts-dev/     # Vite 插件：开发期把 .glsl 着色器编译为内存 ES module（含 HMR）
 ├── tooling/
 │   ├── config-typescript/        # @repo/config-typescript：base / node / react 预设
 │   ├── config-eslint/            # @repo/config-eslint：base / react 扁平配置
@@ -115,9 +116,7 @@ export default defineConfig({
 import cesiumSandcastle from "vite-cesium-sandcastle";
 
 export default defineConfig({
-  plugins: [
-    ...cesiumSandcastle({ placeholder: "__CESIUM_BASE_URL__", cesiumBaseUrl: "/cesium/" })
-  ]
+  plugins: [cesiumSandcastle({ placeholder: "__CESIUM_BASE_URL__", cesiumBaseUrl: "/cesium/" })]
 });
 ```
 
