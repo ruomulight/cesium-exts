@@ -75,11 +75,20 @@ export function findEntryFileName(bundle: Bundle | undefined, entryName: string)
  *
  * 用户没有配置多入口时，显式保留 `index.html`，避免新增 Entry 覆盖
  * Vite 原有的应用入口。字符串或数组形式的 input 不会被改写。
+ *
+ * 对 iframe 通过 importmap 加载的库入口，必须保留全部 export：Vite/Rolldown
+ * 默认 `preserveEntrySignatures: false` 会把「无站内引用」的入口摇成空文件，
+ * 导致生产环境 `import … from "cesium-exts"` 触发 SyntaxError。
  */
 export function registerBuildEntry(config: ResolvedConfig, entryName: string, entryPath: string): void {
   const targetOptions = config.build.rolldownOptions ?? config.build.rollupOptions;
   if (!targetOptions) {
     return;
+  }
+
+  // iframe 侧靠 importmap 消费该入口的 named export，必须强制保留签名
+  if (entryName === CESIUM_EXTS_ENTRY_NAME) {
+    targetOptions.preserveEntrySignatures = "strict";
   }
 
   const inputs = targetOptions.input;
