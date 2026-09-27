@@ -1,0 +1,6 @@
+title: Radar Scan
+description: 使用 RadarScanPrimitive 绘制立体雷达扫描半球与地面底盘，支持多实例同屏与运行时参数调节。
+labels:
+  - Effects
+  - cesium-exts
+thumbnail: thumbnail.jpg
