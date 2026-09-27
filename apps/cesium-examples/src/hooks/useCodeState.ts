@@ -44,7 +44,6 @@ viewer.camera.setView({
  */
 export const defaultHtmlCode = `<div id="cesiumContainer" class="fullSize"></div>
 <div id="loadingOverlay"><h1>Loading...</h1></div>
-<div id="toolbar"></div>
 `;
 
 /**

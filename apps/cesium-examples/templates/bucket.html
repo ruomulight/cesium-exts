@@ -88,10 +88,6 @@
         display: block;
       }
 
-      .sandcastle-loading #toolbar {
-        display: none;
-      }
-
       /* 参照官方 Sandcastle bucket.css，使 Cesium 视窗容器占满整个 iframe 视口 */
       .fullSize {
         position: absolute;
@@ -99,20 +95,6 @@
         left: 0;
         bottom: 0;
         right: 0;
-      }
-
-      #toolbar {
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        display: flex;
-        flex-wrap: wrap;
-        gap: 4px;
-        padding: 4px 8px;
-        z-index: 1;
-        background: oklch(22.52% 0.005 268.32 / 80%);
-        backdrop-filter: blur(4px);
       }
     </style>
   </head>
