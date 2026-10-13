@@ -1,7 +1,12 @@
 import * as Cesium from "cesium";
 
 const viewer = new Cesium.Viewer("cesiumContainer", {
-  shouldAnimate: true
+  shouldAnimate: true,
+  baseLayerPicker: false,
+  geocoder: false,
+  baseLayer: Cesium.ImageryLayer.fromProviderAsync(
+    Cesium.TileMapServiceImageryProvider.fromUrl(Cesium.buildModuleUrl("Assets/Textures/NaturalEarthII"))
+  )
 });
 
 function dataCallback(interval, index) {

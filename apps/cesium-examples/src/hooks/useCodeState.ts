@@ -1,5 +1,3 @@
-import type { Viewer } from "cesium";
-
 import { type ActionDispatch, useReducer } from "react";
 
 /**
@@ -13,26 +11,21 @@ export type SandcastleAction =
   | { type: "setAndRun"; code?: string; html?: string }; // 设置代码并立即执行
 
 /**
- * Viewer 默认配置项，会被序列化进 defaultJsCode 模板
- */
-const options: Viewer.ConstructorOptions = {
-  infoBox: false
-};
-
-/**
- * 将对象序列化为无引号 key 的多行对象字面量代码字符串
- * 例如 { infoBox: false } -> `{\n  infoBox: false\n}`
- */
-function toObjectLiteral(obj: Record<string, unknown>): string {
-  return JSON.stringify(obj, null, 2).replace(/^(\s*)"([^"]+)"(\s*:)/gm, "$1$2$3");
-}
-
-/**
- * 默认 Javascript 代码模板
+ * 默认 Javascript 代码模板。
+ * 使用 Cesium 自带 Natural Earth II，关闭 geocoder / baseLayerPicker，避免请求 ion。
  */
 export const defaultJsCode = `import * as Cesium from "cesium";
 
-const viewer = new Cesium.Viewer("cesiumContainer", ${toObjectLiteral(options)});
+const viewer = new Cesium.Viewer("cesiumContainer", {
+  infoBox: false,
+  baseLayerPicker: false,
+  geocoder: false,
+  baseLayer: Cesium.ImageryLayer.fromProviderAsync(
+    Cesium.TileMapServiceImageryProvider.fromUrl(
+      Cesium.buildModuleUrl("Assets/Textures/NaturalEarthII")
+    )
+  )
+});
 
 viewer.camera.setView({
   destination: Cesium.Cartesian3.fromDegrees(106.738108, 33.006706,30000000)

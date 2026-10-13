@@ -1,6 +1,12 @@
 import * as Cesium from "cesium";
 
-const viewer = new Cesium.Viewer("cesiumContainer");
+const viewer = new Cesium.Viewer("cesiumContainer", {
+  baseLayerPicker: false,
+  geocoder: false,
+  baseLayer: Cesium.ImageryLayer.fromProviderAsync(
+    Cesium.TileMapServiceImageryProvider.fromUrl(Cesium.buildModuleUrl("Assets/Textures/NaturalEarthII"))
+  )
+});
 
 // Add a WMS imagery layer
 const layer = new Cesium.ImageryLayer(

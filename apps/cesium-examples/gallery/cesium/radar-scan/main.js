@@ -8,7 +8,7 @@ import * as Cesium from "cesium";
 import { flyToTarget, RadarScanPrimitive } from "cesium-exts";
 import { Pane } from "tweakpane";
 
-// 精简 Viewer UI，突出雷达效果本身
+// 精简 Viewer UI，突出雷达效果本身；本地 Natural Earth II，不请求 ion
 const viewer = new Cesium.Viewer("cesiumContainer", {
   animation: false,
   timeline: false,
@@ -19,7 +19,10 @@ const viewer = new Cesium.Viewer("cesiumContainer", {
   navigationHelpButton: false,
   fullscreenButton: true,
   infoBox: false,
-  selectionIndicator: false
+  selectionIndicator: false,
+  baseLayer: Cesium.ImageryLayer.fromProviderAsync(
+    Cesium.TileMapServiceImageryProvider.fromUrl(Cesium.buildModuleUrl("Assets/Textures/NaturalEarthII"))
+  )
 });
 
 // 上海浦东附近的三个初始雷达站点（经度 / 纬度 / 高度，单位：度、度、米）

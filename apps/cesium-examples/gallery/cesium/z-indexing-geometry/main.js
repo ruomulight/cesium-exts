@@ -13,7 +13,13 @@ const pane = new Pane();
 pane.addBinding(PARAMS, "background");
 pane.addBinding(PARAMS, "tint");
 
-const viewer = new Cesium.Viewer("cesiumContainer");
+const viewer = new Cesium.Viewer("cesiumContainer", {
+  baseLayerPicker: false,
+  geocoder: false,
+  baseLayer: Cesium.ImageryLayer.fromProviderAsync(
+    Cesium.TileMapServiceImageryProvider.fromUrl(Cesium.buildModuleUrl("Assets/Textures/NaturalEarthII"))
+  )
+});
 
 viewer.entities.add({
   id: "Red rectangle, zIndex 1",
