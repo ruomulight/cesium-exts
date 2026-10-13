@@ -12,7 +12,7 @@ packages:
 catalogs:
   # ── Cesium 引擎（独立 catalog，不分层）─────────────────
   cesium:
-    cesium: ^1.142.0
+    cesium: ^1.146.0
 
   # ── 通用开发工具链（跨所有 workspace 共享）─────────────
   tooling:
