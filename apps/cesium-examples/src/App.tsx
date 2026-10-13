@@ -120,7 +120,7 @@ function App() {
             <Button
               variant={activeView === "gallery" ? "secondary" : "ghost"}
               size="icon"
-              title="示例画廊"
+              title="cesium示例"
               onClick={() => setActiveView("gallery")}
             >
               <Icon icon="mdi:file-image-marker" className="text-xl" />
