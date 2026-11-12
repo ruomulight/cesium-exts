@@ -1,6 +1,9 @@
 export { RadarScanPrimitive } from "./src/effect/radar";
 export type { RadarPosition, RadarScanOptions } from "./src/effect/radar";
 
+export { GlowWallPrimitive } from "./src/effect/wall";
+export type { GlowWallOptions, GlowWallPosition } from "./src/effect/wall";
+
 export { camera, cesiumExtsVersion, cesiumVersion, flyToTarget } from "./src/utils";
 export type { FlyToTargetOptions } from "./src/utils";
 
