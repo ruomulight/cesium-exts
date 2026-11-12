@@ -1,3 +1,4 @@
+import { cesiumExtsVersion, cesiumVersion } from "cesium-exts";
 import { useCallback, useRef, useState } from "react";
 
 import type { ConsoleMessage, ConsoleMessageType } from "@/components/ConsoleMirror/ConsoleMirror";
@@ -14,6 +15,32 @@ import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/componen
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useCodeState } from "@/hooks/useCodeState";
 import { useUrlSharing } from "@/hooks/useUrlSharing";
+
+/** 主视图顶栏展示的库版本。 */
+const LIBRARY_VERSIONS = [
+  { label: "cesium-exts", version: cesiumExtsVersion() },
+  { label: "Cesium", version: cesiumVersion() }
+] as const;
+
+function VersionBar() {
+  return (
+    <header className="flex h-9 shrink-0 items-center justify-between gap-3 border-b bg-background px-3">
+      <div className="flex min-w-0 items-center gap-2">
+        <span className="size-1.5 shrink-0 rounded-full bg-foreground" aria-hidden="true" />
+        <span className="truncate text-sm font-medium tracking-tight text-foreground">cesium-exts</span>
+      </div>
+
+      <dl className="flex shrink-0 items-center gap-1.5">
+        {LIBRARY_VERSIONS.map(item => (
+          <div key={item.label} className="flex items-center gap-1.5 rounded-md border bg-muted/50 px-2 py-1">
+            <dt className="text-xs leading-none text-muted-foreground">{item.label}</dt>
+            <dd className="font-mono text-xs leading-none font-medium text-foreground tabular-nums">{item.version}</dd>
+          </div>
+        ))}
+      </dl>
+    </header>
+  );
+}
 
 function App() {
   // --- URL 分享（必须在 activeView 之前调用，以便派生初始视图） ---
@@ -109,10 +136,11 @@ function App() {
   }, []);
 
   return (
-    // 根容器:占满整个视口
-    <div className="h-screen w-screen">
+    // 根容器:顶栏版本号 + 下方左栏 | 中栏 | 右栏
+    <div className="flex h-screen w-screen flex-col">
+      <VersionBar />
       {/* 水平方向可缩放面板组:左栏 | 中栏 | 右栏 */}
-      <ResizablePanelGroup orientation="horizontal">
+      <ResizablePanelGroup orientation="horizontal" className="h-auto min-h-0 flex-1">
         {/* 左侧侧边栏按钮区域 */}
         <div className="flex w-12 h-full flex-col justify-between py-4 border-r bg-background">
           {/* 顶部按钮组:示例画廊、编辑器入口 */}
