@@ -1,5 +1,6 @@
 import { cesiumExtsVersion, cesiumVersion } from "cesium-exts";
 import { useCallback, useRef, useState } from "react";
+import { usePanelRef } from "react-resizable-panels";
 
 import type { ConsoleMessage, ConsoleMessageType } from "@/components/ConsoleMirror/ConsoleMirror";
 import type { GalleryItem } from "@/types/sandcastle";
@@ -102,6 +103,19 @@ function App() {
 
   // 控制台消息列表：由 Bucket 通过 postMessage 回传，ConsoleMirror 渲染
   const [consoleMessages, setConsoleMessages] = useState<ConsoleMessage[]>([]);
+  // 收起后面板只留 36px 顶栏，再展开时回到收起前的高度
+  const consolePanelRef = usePanelRef();
+  const [consoleCollapsed, setConsoleCollapsed] = useState(false);
+
+  const toggleConsole = useCallback(() => {
+    const panel = consolePanelRef.current;
+    if (!panel) return;
+    if (panel.isCollapsed()) {
+      panel.expand();
+    } else {
+      panel.collapse();
+    }
+  }, [consolePanelRef]);
 
   /**
    * 追加一条控制台消息。
@@ -260,9 +274,24 @@ function App() {
 
             <ResizableHandle withHandle />
 
-            {/* 右下面板:ConsoleMirror - 展示运行时控制台输出 */}
-            <ResizablePanel minSize={30} defaultSize={100}>
-              <ConsoleMirror messages={consoleMessages} onClear={clearConsole} />
+            {/* 右下面板:ConsoleMirror - 展示运行时控制台输出。收起后只保留顶栏 */}
+            <ResizablePanel
+              panelRef={consolePanelRef}
+              collapsible
+              collapsedSize={36}
+              minSize={36}
+              defaultSize={100}
+              onResize={() => {
+                const next = consolePanelRef.current?.isCollapsed() ?? false;
+                setConsoleCollapsed(prev => (prev === next ? prev : next));
+              }}
+            >
+              <ConsoleMirror
+                messages={consoleMessages}
+                onClear={clearConsole}
+                collapsed={consoleCollapsed}
+                onToggleCollapsed={toggleConsole}
+              />
             </ResizablePanel>
           </ResizablePanelGroup>
         </ResizablePanel>

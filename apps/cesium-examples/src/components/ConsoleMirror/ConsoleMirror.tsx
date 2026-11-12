@@ -16,6 +16,10 @@ interface ConsoleMirrorProps {
   messages: ConsoleMessage[];
   /** 清空控制台的回调 */
   onClear: () => void;
+  /** 消息列表是否已收起 */
+  collapsed?: boolean;
+  /** 点击控制台图标时切换消息列表的展开状态 */
+  onToggleCollapsed?: () => void;
 }
 
 /** 消息类型对应的图标和样式 */
@@ -29,7 +33,7 @@ const MESSAGE_CONFIG: Record<ConsoleMessageType, { icon: string; className: stri
  * 控制台镜像组件
  * 接收来自 iframe 沙箱的 console 输出并展示，支持按类型着色和清空操作
  */
-function ConsoleMirror({ messages, onClear }: ConsoleMirrorProps) {
+function ConsoleMirror({ messages, onClear, collapsed = false, onToggleCollapsed }: ConsoleMirrorProps) {
   const viewportRef = useRef<HTMLDivElement>(null);
 
   // 新消息时自动滚动到底部
@@ -49,11 +53,19 @@ function ConsoleMirror({ messages, onClear }: ConsoleMirrorProps) {
   );
 
   return (
-    <div className="flex h-full flex-col border-t">
-      {/* 头部栏 */}
-      <div className="flex items-center justify-between border-b px-3 py-1.5 bg-muted/30">
+    <div className="flex h-full min-h-0 flex-col overflow-hidden">
+      {/* 头部栏：固定 36px，与面板收起高度一致 */}
+      <div className="flex h-9 shrink-0 items-center justify-between border-y bg-muted/30 px-3">
         <div className="flex items-center gap-2 text-sm font-medium">
-          <Icon icon="mdi:console-line" className="text-base" />
+          <button
+            type="button"
+            className="inline-flex size-6 items-center justify-center rounded-md hover:bg-muted"
+            title={collapsed ? "展开消息列表" : "收起消息列表"}
+            aria-expanded={!collapsed}
+            onClick={onToggleCollapsed}
+          >
+            <Icon icon="mdi:console-line" className="text-base" />
+          </button>
           <span>控制台</span>
           {counts.error > 0 && (
             <span className="rounded-full bg-red-500/15 px-1.5 py-0.5 text-xs text-red-500">{counts.error}</span>
@@ -67,27 +79,29 @@ function ConsoleMirror({ messages, onClear }: ConsoleMirrorProps) {
         </Button>
       </div>
 
-      {/* 消息列表 */}
-      <ScrollArea viewportRef={viewportRef} className="min-h-0 flex-1 font-mono text-xs">
-        {messages.length === 0 ? (
-          <div className="flex h-full items-center justify-center text-muted-foreground text-sm">
-            控制台输出将显示在此处
-          </div>
-        ) : (
-          messages.map(msg => {
-            const config = MESSAGE_CONFIG[msg.type];
-            return (
-              <div
-                key={msg.id}
-                className={`flex items-start gap-1.5 border-b border-border/50 px-3 py-1 hover:bg-muted/30 ${config.className}`}
-              >
-                <Icon icon={config.icon} className="mt-0.5 shrink-0 text-sm" />
-                <span className="whitespace-pre-wrap break-all">{msg.message}</span>
-              </div>
-            );
-          })
-        )}
-      </ScrollArea>
+      {/* 消息列表：收起时不占高度 */}
+      {!collapsed && (
+        <ScrollArea viewportRef={viewportRef} className="min-h-0 flex-1 font-mono text-xs">
+          {messages.length === 0 ? (
+            <div className="flex h-full items-center justify-center text-muted-foreground text-sm">
+              控制台输出将显示在此处
+            </div>
+          ) : (
+            messages.map(msg => {
+              const config = MESSAGE_CONFIG[msg.type];
+              return (
+                <div
+                  key={msg.id}
+                  className={`flex items-start gap-1.5 border-b border-border/50 px-3 py-1 hover:bg-muted/30 ${config.className}`}
+                >
+                  <Icon icon={config.icon} className="mt-0.5 shrink-0 text-sm" />
+                  <span className="whitespace-pre-wrap break-all">{msg.message}</span>
+                </div>
+              );
+            })
+          )}
+        </ScrollArea>
+      )}
     </div>
   );
 }
