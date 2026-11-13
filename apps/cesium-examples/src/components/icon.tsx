@@ -1,6 +1,6 @@
-import type { IconProps } from "@iconify/react";
+import type { IconProps } from "@iconify/react/offline";
 
-import { Icon as IconifyIcon } from "@iconify/react";
+import { Icon as IconifyIcon } from "@iconify/react/offline";
 
 import { cn } from "@/lib/utils";
 

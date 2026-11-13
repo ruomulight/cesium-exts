@@ -51,6 +51,12 @@ catalogs:
     '@babel/core':
       specifier: ^8.0.1
       version: 8.0.1
+    '@iconify-json/mdi':
+      specifier: 1.2.3
+      version: 1.2.3
+    '@iconify/react':
+      specifier: 6.0.2
+      version: 6.0.2
     '@rolldown/plugin-babel':
       specifier: ^0.2.3
       version: 0.2.3
@@ -144,6 +150,12 @@ importers:
       '@fontsource-variable/geist':
         specifier: 5.2.9
         version: 5.2.9
+      '@iconify-json/mdi':
+        specifier: catalog:react-app
+        version: 1.2.3
+      '@iconify/react':
+        specifier: catalog:react-app
+        version: 6.0.2(react@19.2.8)
       '@monaco-editor/react':
         specifier: 4.7.0
         version: 4.7.0(monaco-editor@0.55.1)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
@@ -205,9 +217,6 @@ importers:
       '@babel/core':
         specifier: catalog:react-app
         version: 8.0.1
-      '@iconify/react':
-        specifier: 6.0.2
-        version: 6.0.2(react@19.2.8)
       '@repo/config-eslint':
         specifier: workspace:*
         version: link:../../tooling/config-eslint
@@ -939,6 +948,9 @@ packages:
   '@humanwhocodes/retry@0.4.3':
     resolution: {integrity: sha512-bV0Tgo9K4hfPCek+aMAn81RppFKv2ySDQeMoSZuvTASywNTnVJCArCZE2FWqpvIatKu7VMRLWlR1EazvVhDyhQ==}
     engines: {node: '>=18.18'}
+
+  '@iconify-json/mdi@1.2.3':
+    resolution: {integrity: sha512-O3cLwbDOK7NNDf2ihaQOH5F9JglnulNDFV7WprU2dSoZu3h3cWH//h74uQAB87brHmvFVxIOkuBX2sZSzYhScg==}
 
   '@iconify/react@6.0.2':
     resolution: {integrity: sha512-SMmC2sactfpJD427WJEDN6PMyznTFMhByK9yLW0gOTtnjzzbsi/Ke/XqsumsavFPwNiXs8jSiYeZTmLCLwO+Fg==}
@@ -4425,6 +4437,10 @@ snapshots:
   '@humanwhocodes/module-importer@1.0.1': {}
 
   '@humanwhocodes/retry@0.4.3': {}
+
+  '@iconify-json/mdi@1.2.3':
+    dependencies:
+      '@iconify/types': 2.0.0
 
   '@iconify/react@6.0.2(react@19.2.8)':
     dependencies:

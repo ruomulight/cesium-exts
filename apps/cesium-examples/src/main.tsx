@@ -2,8 +2,9 @@ import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 
 import { ThemeProvider } from "@/components/theme-provider";
-import "@/styles/index.css";
+import "@/icons";
 import "@/monaco-setup";
+import "@/styles/index.css";
 
 import App from "./App.tsx";
 
