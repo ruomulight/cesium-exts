@@ -4,6 +4,7 @@ import { createPortal } from "react-dom";
 import type { GalleryItem } from "@/types/sandcastle";
 
 import { Icon } from "@/components/icon";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { getGalleryItems } from "@/util/gallery";
 
 /**
@@ -89,7 +90,7 @@ export default function Gallery({ activeId, onRun, onSelect }: GalleryProps) {
   }
 
   return (
-    <div className="h-full overflow-auto">
+    <ScrollArea className="h-full min-h-0">
       <div className="flex flex-col gap-2 p-2">
         {items.map(item => {
           // 行数 badge：代码行数（与官方 Sandcastle 的 "N lines" 一致）
@@ -152,6 +153,6 @@ export default function Gallery({ activeId, onRun, onSelect }: GalleryProps) {
           );
         })}
       </div>
-    </div>
+    </ScrollArea>
   );
 }
