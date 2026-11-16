@@ -1,5 +1,5 @@
 title: Glow Wall
-description: 使用 GlowWallPrimitive 绘制向上流动的发光墙，适合电子围栏和警戒线。可调节颜色、速度、墙高和光带锐度。
+description: 使用 GlowWallPrimitive 绘制发光墙。默认用箭头贴图沿墙长滚动，可在面板里改方向、重复次数和速度；关闭贴图后回到程序化光带。
 labels:
   - Effects
   - cesium-exts

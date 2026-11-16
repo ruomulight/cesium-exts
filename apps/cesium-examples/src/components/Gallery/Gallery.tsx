@@ -1,9 +1,66 @@
-import { useMemo } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 
 import type { GalleryItem } from "@/types/sandcastle";
 
 import { Icon } from "@/components/icon";
 import { getGalleryItems } from "@/util/gallery";
+
+/**
+ * 单行或两行截断的文字。只有实际超出时，悬停才在下方弹出全文。
+ */
+function OverflowText({ text, className }: { text: string; className?: string }) {
+  const ref = useRef<HTMLSpanElement>(null);
+  const [tip, setTip] = useState<{ left: number; top: number } | null>(null);
+
+  useEffect(() => {
+    if (!tip) return;
+    const hide = () => setTip(null);
+    window.addEventListener("scroll", hide, true);
+    window.addEventListener("resize", hide);
+    return () => {
+      window.removeEventListener("scroll", hide, true);
+      window.removeEventListener("resize", hide);
+    };
+  }, [tip]);
+
+  const showTip = () => {
+    const el = ref.current;
+    if (!el) return;
+    const clipped = el.scrollWidth > el.clientWidth + 1 || el.scrollHeight > el.clientHeight + 1;
+    if (!clipped) {
+      setTip(null);
+      return;
+    }
+
+    const rect = el.getBoundingClientRect();
+    const width = Math.min(320, window.innerWidth - 16);
+    const left = Math.min(Math.max(8, rect.left), window.innerWidth - width - 8);
+    const estimatedHeight = Math.min(el.scrollHeight, 96);
+    const below = rect.bottom + 6;
+    const top = below + estimatedHeight > window.innerHeight - 8 ? Math.max(8, rect.top - estimatedHeight - 6) : below;
+    setTip({ left, top });
+  };
+
+  return (
+    <>
+      <span ref={ref} className={className} onPointerEnter={showTip} onPointerLeave={() => setTip(null)}>
+        {text}
+      </span>
+      {tip &&
+        createPortal(
+          <span
+            role="tooltip"
+            className="pointer-events-none fixed z-50 block max-w-xs rounded-md border bg-popover px-2.5 py-1.5 text-xs leading-4 text-pretty text-popover-foreground shadow-md"
+            style={{ left: tip.left, top: tip.top }}
+          >
+            {text}
+          </span>,
+          document.body
+        )}
+    </>
+  );
+}
 
 interface GalleryProps {
   /** 点击卡片：直接运行示例，停留在画廊视图查看效果 */
@@ -60,7 +117,7 @@ export default function Gallery({ onRun, onSelect }: GalleryProps) {
               <section className="flex min-w-0 flex-1 flex-col justify-between gap-1 overflow-hidden">
                 <header className="">
                   <h3 className="flex items-center justify-between gap-2 text-base font-normal leading-6 text-foreground">
-                    <span className="min-w-0 truncate font-semibold">{item.title}</span>
+                    <OverflowText text={item.title} className="min-w-0 truncate font-semibold" />
                     <Icon
                       onClick={e => {
                         e.stopPropagation();
@@ -71,7 +128,10 @@ export default function Gallery({ onRun, onSelect }: GalleryProps) {
                     />
                   </h3>
 
-                  <p className="line-clamp-2 text-xs leading-4 text-muted-foreground">{item.description}</p>
+                  <OverflowText
+                    text={item.description}
+                    className="line-clamp-2 text-xs leading-4 text-muted-foreground"
+                  />
                 </header>
                 {item.labels.length > 0 && (
                   <ul className="flex flex-wrap justify-items-start gap-1">
