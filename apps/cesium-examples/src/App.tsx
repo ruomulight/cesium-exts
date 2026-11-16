@@ -1,5 +1,5 @@
 import { cesiumExtsVersion, cesiumVersion } from "cesium-exts";
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { usePanelRef } from "react-resizable-panels";
 
 import type { ConsoleMessage, ConsoleMessageType } from "@/components/ConsoleMirror/ConsoleMirror";
@@ -16,6 +16,7 @@ import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/componen
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useCodeState } from "@/hooks/useCodeState";
 import { useUrlSharing } from "@/hooks/useUrlSharing";
+import { getGalleryItems } from "@/util/gallery";
 
 /** 主视图顶栏展示的库版本。 */
 const LIBRARY_VERSIONS = [
@@ -45,11 +46,32 @@ function VersionBar() {
 
 function App() {
   // --- URL 分享（必须在 activeView 之前调用，以便派生初始视图） ---
-  const { galleryId, initialData, setGalleryId, buildShareUrl, copyShareLink } = useUrlSharing();
+  const { galleryId, initialData, setGalleryId, clearGalleryId, buildShareUrl, copyShareLink } = useUrlSharing();
+
+  // `?id=` 对应的示例优先于 hash。地址栏写着某个示例时，右侧预览就跑它，而不是默认地球。
+  const [startupPreview] = useState(() => {
+    if (!galleryId) return initialData;
+    const example = getGalleryItems().find(item => item.name === galleryId);
+    return example ? { code: example.code, html: example.html } : initialData;
+  });
 
   // 编辑器草稿态（code/html）与已提交态（committedCode/committedHtml/runNumber）
-  // 将 URL 分享数据作为初始值传入，使分享链接打开时编辑器与 iframe 即呈现分享内容
-  const [codeState, dispatch] = useCodeState(initialData);
+  // 将 URL 分享数据或 `?id=` 示例作为初始值传入，使打开链接时预览与地址栏一致
+  const [codeState, dispatch] = useCodeState(startupPreview);
+
+  // 地址栏上的 id 必须能对上画廊。对不上就去掉，避免刷新后仍显示一个不存在的示例名。
+  useEffect(() => {
+    if (!galleryId) return;
+    const example = getGalleryItems().find(item => item.name === galleryId);
+    if (!example) {
+      clearGalleryId();
+      return;
+    }
+    if (window.location.hash.length <= 1) return;
+    const url = new URL(window.location.href);
+    url.hash = "";
+    window.history.replaceState(null, "", url.toString());
+  }, [clearGalleryId, galleryId]);
   // 编辑器实例引用，用于触发 undo / redo 等命令式操作
   const editorRef = useRef<SandcastleEditorHandle>(null);
 
@@ -80,7 +102,11 @@ function App() {
   /** 点击「运行」按钮：将草稿态提交为已提交态并递增 runNumber，触发 Bucket 重建 iframe */
   const handleRun = useCallback(() => {
     dispatch({ type: "runSandcastle" });
-  }, [dispatch]);
+    if (!galleryId) return;
+    const example = getGalleryItems().find(item => item.name === galleryId);
+    const stillExample = example && example.code === codeState.code && example.html === codeState.html;
+    if (!stillExample) clearGalleryId();
+  }, [clearGalleryId, codeState.code, codeState.html, dispatch, galleryId]);
 
   /** 点击画廊卡片：直接运行示例，停留画廊视图即时查看效果，同时将 `?id=` 写入 URL */
   const handleRunExample = useCallback(
@@ -193,7 +219,7 @@ function App() {
           <div className="h-full flex flex-col">
             {activeView === "gallery" ? (
               // 画廊模式:展示内置示例列表
-              <Gallery onRun={handleRunExample} onSelect={handleSelectExample} />
+              <Gallery activeId={galleryId} onRun={handleRunExample} onSelect={handleSelectExample} />
             ) : (
               // 编辑器模式:Tab 切换 JS / HTML，顶栏放置撤销/重做/分享/运行
               <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full h-full flex flex-col">

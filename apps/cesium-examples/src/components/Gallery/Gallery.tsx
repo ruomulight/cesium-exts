@@ -63,6 +63,8 @@ function OverflowText({ text, className }: { text: string; className?: string })
 }
 
 interface GalleryProps {
+  /** 地址栏 `?id=` 对应的示例。卡片高亮与右侧预览使用同一份 id */
+  activeId?: string | null;
   /** 点击卡片：直接运行示例，停留在画廊视图查看效果 */
   onRun: (item: GalleryItem) => void;
   /** 点击代码图标：将示例载入编辑器 */
@@ -74,7 +76,7 @@ interface GalleryProps {
  * 以官方 Sandcastle 风格的纵向列表展示可用示例（横向卡片：缩略图 + 标题/描述 + 标签），
  * 点击卡片直接运行示例（onRun），点击标题右侧的代码图标进入编辑器（onSelect）
  */
-export default function Gallery({ onRun, onSelect }: GalleryProps) {
+export default function Gallery({ activeId, onRun, onSelect }: GalleryProps) {
   // glob 模块常量在 HMR 时会重新求值，因此使用空依赖数组即可
   const items = useMemo(() => getGalleryItems(), []);
 
@@ -97,8 +99,9 @@ export default function Gallery({ onRun, onSelect }: GalleryProps) {
             <button
               key={item.name}
               type="button"
+              aria-current={item.name === activeId ? "true" : undefined}
               onClick={() => onRun(item)}
-              className="flex h-35 w-full items-start gap-2 rounded-lg bg-card p-2 text-left transition-colors duration-150 ease-out hover:bg-muted/50 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+              className={`flex h-35 w-full items-start gap-2 rounded-lg bg-card p-2 text-left transition-colors duration-150 ease-out hover:bg-muted/50 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background ${item.name === activeId ? "ring-2 ring-ring" : ""}`}
             >
               {/* 缩略图：3:2 固定比例（max 225×150），右下角为行数 badge */}
               <div className="relative h-full w-[38.2%] max-w-56.25 shrink-0 rounded-sm bg-muted">

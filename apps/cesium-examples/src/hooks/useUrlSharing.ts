@@ -7,18 +7,21 @@ import { decodeBase64Data, makeCompressedBase64String } from "@/util/Helpers";
  *
  * - 页面加载时：若 URL hash 包含编码数据，自动解码并返回 code + html
  * - 页面加载时：若 URL 包含 `?id=<name>` 参数，返回对应 gallery 示例 ID
- * - 选择 gallery 示例时：将 `?id=<name>` 写入 URL search
+ * - 选择 gallery 示例时：将 `?id=<name>` 写入 URL search，并更新当前 id
+ * - 预览不再对应该示例时：从 URL 去掉 `?id=`
  * - 分享时：根据 code + html 构造分享链接（不修改当前页面 URL）并复制到剪贴板
  *
  * @returns galleryId       从 URL `?id=` 解析的 gallery 示例 ID（无数据时为 null）
  * @returns initialData    从 URL hash 解码的初始数据（无数据时为 null）
- * @returns setGalleryId   将 `?id=<name>` 写入 URL search
+ * @returns setGalleryId   将 `?id=<name>` 写入 URL search，并记为当前示例
+ * @returns clearGalleryId 从 URL 去掉 `?id=`，表示预览已不是某个画廊示例
  * @returns buildShareUrl  根据 code + html 构造分享链接字符串（不修改当前页面 URL）
  * @returns copyShareLink  复制指定链接到剪贴板
  */
 export function useUrlSharing() {
   // 从 URL search params 解析 gallery 示例 ID（如 ?id=web-map-service-wms）
-  const [galleryId] = useState<string | null>(() => {
+  // 之后随卡片选择和「运行」更新，保证地址栏和当前示例是同一份状态
+  const [galleryId, setGalleryIdState] = useState<string | null>(() => {
     const params = new URLSearchParams(window.location.search);
     return params.get("id") || null;
   });
@@ -37,11 +40,20 @@ export function useUrlSharing() {
     return null;
   });
 
-  /** 将 `?id=<name>` 写入 URL search（保留 hash），移除旧 hash 避免冲突 */
+  /** 将 `?id=<name>` 写入 URL search，并清掉 hash，避免分享代码盖住画廊示例 */
   const setGalleryId = useCallback((name: string) => {
+    setGalleryIdState(name);
     const url = new URL(window.location.href);
     url.searchParams.set("id", name);
-    url.hash = ""; // 清除旧的代码 hash，避免覆盖 gallery 示例
+    url.hash = "";
+    window.history.replaceState(null, "", url.toString());
+  }, []);
+
+  /** 预览已不再是画廊示例时，去掉 `?id=` */
+  const clearGalleryId = useCallback(() => {
+    setGalleryIdState(null);
+    const url = new URL(window.location.href);
+    url.searchParams.delete("id");
     window.history.replaceState(null, "", url.toString());
   }, []);
 
@@ -82,6 +94,7 @@ export function useUrlSharing() {
     galleryId,
     initialData,
     setGalleryId,
+    clearGalleryId,
     buildShareUrl,
     copyShareLink
   };
