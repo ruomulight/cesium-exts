@@ -18,6 +18,9 @@ const viewer = new Cesium.Viewer("cesiumContainer", {
   )
 });
 
+// 贴图与本示例放在同一目录。画廊加载时会把 ./arrow.png 换成可访问的地址。
+const ARROW = new URL("./arrow.png", window.location.origin).href;
+
 viewer.entities.add({
   id: "Red rectangle, zIndex 1",
   rectangle: {
@@ -31,7 +34,7 @@ viewer.entities.add({
   id: "Textured rectangle, zIndex 2",
   rectangle: {
     coordinates: Cesium.Rectangle.fromDegrees(-112.0, 25.0, -102.5, 35.0),
-    material: "../images/Cesium_Logo_Color.jpg",
+    material: ARROW,
     zIndex: 2
   }
 });
@@ -49,7 +52,7 @@ viewer.entities.add({
   id: "Textured rectangle, zIndex 3",
   rectangle: {
     coordinates: Cesium.Rectangle.fromDegrees(-99.5, 20.0, -90.0, 30.0),
-    material: "../images/Cesium_Logo_Color.jpg",
+    material: ARROW,
     zIndex: 3
   }
 });
