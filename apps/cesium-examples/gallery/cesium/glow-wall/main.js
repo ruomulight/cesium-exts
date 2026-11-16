@@ -43,7 +43,7 @@ const PARAMS = {
   show: true,
   useImage: true,
   flowAxis: "horizontal",
-  repeatX: 10,
+  repeatX: 24,
   repeatY: 1,
   speed: 2,
   maximumHeight: 200,
