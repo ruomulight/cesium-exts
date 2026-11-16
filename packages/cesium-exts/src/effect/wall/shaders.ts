@@ -1,11 +1,12 @@
 /**
- * 动态发光墙材质。
+ * 动态发光墙的 Fabric 片元着色器。
  *
  * 墙面纹理坐标 `st.t` 从底（0）到顶（1）。
  * `fract(st.t - time)` 让高亮峰随帧向上移动；`pow` 把线性渐变收成一条窄光带。
  * 时间来自 Cesium 内置的 `czm_frameNumber`，不需要每帧改 uniform。
  *
- * uniforms 由 `Cesium.Material` 按 fabric 声明注入，这里不要再写一遍 `uniform`。
+ * `color`、`speed`、`glowPower`、`baseAlpha`、`emission` 由 `Cesium.Material` 按 fabric 声明注入，
+ * 源码里不要再声明 `uniform`。
  */
 export const GLOW_WALL_SHADER_SOURCE = `
   czm_material czm_getMaterial(czm_materialInput materialInput) {
