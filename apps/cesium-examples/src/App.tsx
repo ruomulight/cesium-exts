@@ -131,7 +131,15 @@ function App() {
   const [consoleMessages, setConsoleMessages] = useState<ConsoleMessage[]>([]);
   // 收起后面板只留 36px 顶栏，再展开时回到收起前的高度
   const consolePanelRef = usePanelRef();
-  const [consoleCollapsed, setConsoleCollapsed] = useState(false);
+  const [consoleCollapsed, setConsoleCollapsed] = useState(true);
+
+  // 默认收起。先记一档展开高度再 collapse，否则第一次展开没有可恢复的尺寸。
+  useEffect(() => {
+    const panel = consolePanelRef.current;
+    if (!panel) return;
+    panel.resize(100);
+    panel.collapse();
+  }, [consolePanelRef]);
 
   const toggleConsole = useCallback(() => {
     const panel = consolePanelRef.current;
@@ -306,7 +314,7 @@ function App() {
               collapsible
               collapsedSize={36}
               minSize={36}
-              defaultSize={100}
+              defaultSize={36}
               onResize={() => {
                 const next = consolePanelRef.current?.isCollapsed() ?? false;
                 setConsoleCollapsed(prev => (prev === next ? prev : next));
