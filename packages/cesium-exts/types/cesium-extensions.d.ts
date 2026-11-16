@@ -173,6 +173,10 @@ declare module "cesium" {
    * 定义纹理每个像素的颜色通道组成
    */
   export enum PixelFormat {
+    /** 深度分量，用作帧缓冲的深度附件 */
+    DEPTH_COMPONENT,
+    /** 深度 + 模板，常与 UNSIGNED_INT_24_8 一起使用 */
+    DEPTH_STENCIL,
     /** RGBA 四通道格式：红、绿、蓝、透明度 */
     RGBA
   }
@@ -184,6 +188,10 @@ declare module "cesium" {
   export enum PixelDatatype {
     /** 无符号 8 位整数，取值范围 0-255，最常用的格式 */
     UNSIGNED_BYTE,
+    /** 无符号 16 位整数，常用于深度纹理 */
+    UNSIGNED_SHORT,
+    /** 无符号 32 位整数，用于更高精度的深度纹理 */
+    UNSIGNED_INT,
     /** 32 位浮点数，用于 HDR 或计算纹理 */
     FLOAT
   }
@@ -356,6 +364,12 @@ declare module "cesium" {
 
     /** 深度纹理附件，用于深度测试和深度缓冲 */
     depthTexture: Texture;
+
+    /**
+     * 销毁帧缓冲。
+     * `destroyAttachments` 为 true（默认）时，同时销毁颜色纹理和深度纹理。
+     */
+    destroy(): void;
   }
 
   // ==================== 渲染命令系统 ====================
@@ -639,8 +653,9 @@ declare module "cesium" {
     /**
      * 执行清除操作
      * @param context 渲染上下文
+     * @param passState 通道状态。离屏清除时用来指定视口
      */
-    execute(context: any): void;
+    execute(context: any, passState?: any): void;
   }
 
   // ==================== 数据类型 ====================

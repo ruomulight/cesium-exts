@@ -1,0 +1,6 @@
+title: Terrain Height Map
+description: 用地形瓦片 Mesh 在 GPU 上生成浮点高度图。地形来自 ArcGIS World Elevation，先把 availability 收敛到稳定 LOD，再把范围内瓦片画进同一张纹理。亮度越高，高程越高；没采样到的像素保持黑色。
+labels:
+  - Terrain
+  - cesium-exts
+thumbnail: thumbnail.jpg
