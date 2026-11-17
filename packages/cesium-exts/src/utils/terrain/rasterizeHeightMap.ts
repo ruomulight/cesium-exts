@@ -4,10 +4,22 @@ import type { TerrainHeightMesh } from "./types";
 
 import { HEIGHTMAP_FRAGMENT_SHADER, HEIGHTMAP_VERTEX_SHADER } from "./shaders";
 
+/**
+ * Cesium `Context` 中高度图栅格化用到的子集。
+ */
 interface RendererContext {
+  /** 是否支持浮点颜色缓冲。 */
   colorBufferFloat: boolean;
+  /** 是否支持深度纹理。 */
   depthTexture: boolean;
+  /** 可选的帧结束回调，用于提交 GPU 命令。 */
   endFrame?: () => void;
+  /**
+   * 从帧缓冲读回像素。
+   *
+   * @param readState 读回区域；可指定 framebuffer
+   * @returns RGBA 交错的像素缓冲
+   */
   readPixels(readState: {
     x?: number;
     y?: number;
@@ -17,13 +29,23 @@ interface RendererContext {
   }): ArrayBufferView;
 }
 
+/**
+ * 栅格化产物。颜色纹理挂在 framebuffer 上，销毁 framebuffer 时一并释放。
+ */
 export interface RasterizedHeightMap {
+  /** 用于 `readPixels` / `endFrame` 的渲染上下文。 */
   context: RendererContext;
+  /** RGBA32F 高度纹理，同时作为 framebuffer 的颜色附件。 */
   texture: Cesium.Texture;
+  /** 持有颜色纹理和深度纹理的帧缓冲。 */
   framebuffer: Cesium.Framebuffer;
+  /** 高度图着色器程序。 */
   shaderProgram: Cesium.ShaderProgram;
+  /** 各瓦片对应的 VertexArray，销毁时需逐个释放。 */
   vertexArrays: Cesium.VertexArray[];
+  /** 纹理宽度（像素）。 */
   width: number;
+  /** 纹理高度（像素）。 */
   height: number;
 }
 
@@ -32,6 +54,15 @@ export interface RasterizedHeightMap {
  *
  * 不用 ComputeCommand：它每次执行会清掉输出，多块瓦片画完只剩最后一块。
  * 深度测试保留更高的高程，瓦片接边重叠时不会互相盖掉。
+ *
+ * @param context 必须支持浮点颜色缓冲和深度纹理
+ * @param meshes 已映射到高度图 NDC 的地形三角网
+ * @param width 输出纹理宽度（像素）
+ * @param height 输出纹理高度（像素）
+ * @param minHeight 深度编码用的最低高程（米）
+ * @param maxHeight 深度编码用的最高高程（米）
+ * @returns 帧缓冲、着色器与各瓦片 VertexArray；失败时已创建的 GPU 资源会被释放
+ * @throws WebGL 上下文不支持浮点颜色缓冲或深度纹理时抛出
  */
 export function rasterizeTerrainHeightMap(
   context: RendererContext,
@@ -169,7 +200,11 @@ export function rasterizeTerrainHeightMap(
 
 /**
  * 读回 R 通道。行 0 是帧缓冲底部，对应矩形南边。
- * A < 0.5 的像素没有被地形覆盖，记为 NaN。
+ *
+ * A &lt; 0.5 的像素没有被地形覆盖，记为 `NaN`。
+ *
+ * @param raster {@link rasterizeTerrainHeightMap} 的产物，framebuffer 必须仍有效
+ * @returns 长度为 `width * height` 的高程数组（米）
  */
 export function readHeightTexels(raster: RasterizedHeightMap): Float32Array {
   const pixels = raster.context.readPixels({

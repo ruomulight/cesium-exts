@@ -2,20 +2,41 @@ import * as Cesium from "cesium";
 
 import type { ResolvedTerrainTiles, TerrainHeightMapOptions, TerrainHeightMesh, TerrainTileRef } from "./types";
 
+/** Cesium 量化 Mesh 顶点编码。 */
 interface TerrainMeshEncoding {
+  /**
+   * 把第 `index` 个顶点解码为笛卡尔坐标。
+   *
+   * @param buffer 交错顶点缓冲
+   * @param index 顶点序号
+   * @param result 复用的输出向量
+   */
   decodePosition(buffer: Float32Array, index: number, result: Cesium.Cartesian3): Cesium.Cartesian3;
 }
 
+/** `TerrainData.createMesh` 返回的量化 Mesh。 */
 interface TerrainMeshLike {
+  /** 交错顶点缓冲。 */
   vertices: ArrayLike<number>;
+  /** 三角形索引，前 `indexCountWithoutSkirts` 个属于地表。 */
   indices: ArrayLike<number>;
+  /** 每个顶点占用的 float 数。 */
   stride: number;
+  /** 不含 skirt 的索引数量。 */
   indexCountWithoutSkirts: number;
+  /** 不含 skirt 的顶点数量。 */
   vertexCountWithoutSkirts: number;
+  /** 量化位置解码器。 */
   encoding: TerrainMeshEncoding;
 }
 
+/** 提供 `createMesh` 的地形数据（量化 Mesh 地形）。 */
 interface MeshTerrainData extends Cesium.TerrainData {
+  /**
+   * 由量化缓冲生成可绘制 Mesh。
+   *
+   * 调度器饱和时可能返回 `undefined`，需要重试。
+   */
   createMesh(options: {
     tilingScheme: Cesium.TilingScheme;
     x: number;
@@ -27,14 +48,19 @@ interface MeshTerrainData extends Cesium.TerrainData {
   }): Promise<TerrainMeshLike> | undefined;
 }
 
+/** 一次瓦片几何请求。`data` 在成功拉取后填入。 */
 interface TileJob {
   tile: TerrainTileRef;
   data?: Cesium.TerrainData;
 }
 
+/** 单次允许请求的默认瓦片数。 */
 const DEFAULT_MAX_TILES = 256;
+/** availability 收敛的默认最大轮数。 */
 const DEFAULT_AVAILABILITY_PASSES = 24;
+/** `requestTileGeometry` / `createMesh` 的默认总尝试次数。 */
 const DEFAULT_REQUEST_RETRIES = 5;
+/** 等待未知瓦片变为已知的超时（毫秒）。 */
 const AVAILABILITY_WAIT_MS = 8000;
 
 /**
@@ -42,7 +68,12 @@ const AVAILABILITY_WAIT_MS = 8000;
  *
  * availability 是按需加载的树。做法与 `sampleTerrainMostDetailed` 相同：
  * 记录当前 level，补拉未知瓦片的 availability，level 变化就再来一轮。
- * `requestTileGeometry` 在调度器饱和时返回 undefined，按批重试，失败的瓦片记入 missingTiles。
+ * `requestTileGeometry` 在调度器饱和时返回 `undefined`，按批重试，失败的瓦片记入 `missingTiles`。
+ *
+ * @param terrainProvider 必须暴露 `availability`；椭球地形无法生成高度图
+ * @param options 覆盖范围与瓦片预算等参数
+ * @returns 收敛后的级别、Mesh 以及未能加载的瓦片
+ * @throws 地形提供者不带 availability 时抛出
  */
 export async function resolveTerrainTiles(
   terrainProvider: Cesium.TerrainProvider,
@@ -87,6 +118,20 @@ export async function resolveTerrainTiles(
   };
 }
 
+/**
+ * 迭代补全 availability，直到级别稳定或达到轮数上限。
+ *
+ * 当前级别已知后，还会探测下一级的 unknown 瓦片——ArcGIS 这类服务起初只登记了 0 级，
+ * 必须先把更深一级的 tilemap 拉回来，`computeBestAvailableLevelOverRectangle` 才会升高。
+ *
+ * @param terrainProvider 地形提供者
+ * @param availability 瓦片可用性树
+ * @param rectangle 查询范围（弧度）
+ * @param levelCap 级别上限；未传则不限制
+ * @param maxTiles 瓦片数量预算
+ * @param maxPasses 最大收敛轮数
+ * @returns 最终级别及该级与矩形相交的全部瓦片
+ */
 async function convergeAvailability(
   terrainProvider: Cesium.TerrainProvider,
   availability: Cesium.TileAvailability,
@@ -132,6 +177,18 @@ async function convergeAvailability(
   return { level, tiles: listIntersectingTiles(tilingScheme, rectangle, level) };
 }
 
+/**
+ * 在瓦片预算内选取最高可用级别。
+ *
+ * 先取 availability 给出的最佳级别（可被 `levelCap` 限制），再逐级下调直到瓦片数不超过 `maxTiles`。
+ *
+ * @param availability 瓦片可用性树
+ * @param tilingScheme 用于枚举相交瓦片
+ * @param rectangle 查询范围
+ * @param levelCap 可选级别上限
+ * @param maxTiles 瓦片数量预算
+ * @returns 满足预算的最高级别
+ */
 function levelFittingTileBudget(
   availability: Cesium.TileAvailability,
   tilingScheme: Cesium.TilingScheme,
@@ -146,6 +203,16 @@ function levelFittingTileBudget(
   return level;
 }
 
+/**
+ * 请求未知瓦片的 availability，必要时先展开 level 1 根节点。
+ *
+ * 父地形还没覆盖这块时，官方实现会先拉 level 1 的根瓦片，把 availability 树展开。
+ *
+ * @param terrainProvider 地形提供者
+ * @param availability 瓦片可用性树
+ * @param tilingScheme 用于计算瓦片中心
+ * @param tiles 需要确认可用性的瓦片
+ */
 async function ensureTilesKnown(
   terrainProvider: Cesium.TerrainProvider,
   availability: Cesium.TileAvailability,
@@ -191,6 +258,12 @@ async function ensureTilesKnown(
   await waitUntilKnown(terrainProvider, unknown);
 }
 
+/**
+ * 轮询直到瓦片 availability 变为已知，或超过 {@link AVAILABILITY_WAIT_MS}。
+ *
+ * @param terrainProvider 地形提供者
+ * @param tiles 仍为 unknown 的瓦片
+ */
 async function waitUntilKnown(terrainProvider: Cesium.TerrainProvider, tiles: TerrainTileRef[]): Promise<void> {
   let remaining = tiles;
   const deadline = Date.now() + AVAILABILITY_WAIT_MS;
@@ -202,6 +275,14 @@ async function waitUntilKnown(terrainProvider: Cesium.TerrainProvider, tiles: Te
   }
 }
 
+/**
+ * 取矩形上当前可用的最高级别，并应用可选上限。
+ *
+ * @param availability 瓦片可用性树
+ * @param rectangle 查询范围
+ * @param levelCap 可选级别上限
+ * @returns 非负整数级别
+ */
 function cappedLevel(
   availability: Cesium.TileAvailability,
   rectangle: Cesium.Rectangle,
@@ -213,6 +294,16 @@ function cappedLevel(
   return Math.min(level, Math.max(0, Math.floor(levelCap)));
 }
 
+/**
+ * 列出与矩形相交的全部瓦片。
+ *
+ * 矩形边沿向内收缩 1e-6，避免边界点被相邻瓦片重复计入。
+ *
+ * @param tilingScheme 瓦片方案
+ * @param rectangle 查询范围（弧度）
+ * @param level 目标级别
+ * @returns 相交瓦片列表；级别无效时为空数组
+ */
 function listIntersectingTiles(
   tilingScheme: Cesium.TilingScheme,
   rectangle: Cesium.Rectangle,
@@ -245,11 +336,26 @@ function listIntersectingTiles(
   return tiles;
 }
 
+/**
+ * 瓦片矩形的地理中心。
+ *
+ * @param tilingScheme 瓦片方案
+ * @param tile 瓦片坐标
+ * @returns 中心点的地理坐标
+ */
 function tileCenter(tilingScheme: Cesium.TilingScheme, tile: TerrainTileRef): Cesium.Cartographic {
   const tileRectangle = tilingScheme.tileXYToRectangle(tile.x, tile.y, tile.level);
   return Cesium.Rectangle.center(tileRectangle);
 }
 
+/**
+ * 批量请求瓦片几何。调度器饱和或失败时按批重试。
+ *
+ * @param terrainProvider 地形提供者
+ * @param tiles 待请求的瓦片
+ * @param maxAttempts 总尝试次数
+ * @returns 成功加载的任务，以及最终仍失败的瓦片
+ */
 async function requestGeometryBatch(
   terrainProvider: Cesium.TerrainProvider,
   tiles: TerrainTileRef[],
@@ -287,6 +393,18 @@ async function requestGeometryBatch(
   };
 }
 
+/**
+ * 把已加载的 TerrainData 解码为高度图 NDC Mesh，并统计高程范围。
+ *
+ * 解码失败的瓦片会追加到 `missingTiles`。没有任何有效 Mesh 时高程范围为 0。
+ *
+ * @param tilingScheme 用于椭球与坐标转换
+ * @param rectangle 高度图覆盖范围，用于映射 NDC
+ * @param loaded 已拉取几何的任务
+ * @param maxAttempts `createMesh` 重试次数
+ * @param missingTiles 失败瓦片收集器，解码失败时就地追加
+ * @returns NDC Mesh 以及全局高程范围
+ */
 async function decodeMeshes(
   tilingScheme: Cesium.TilingScheme,
   rectangle: Cesium.Rectangle,
@@ -329,6 +447,17 @@ async function decodeMeshes(
   return { meshes, minHeight, maxHeight };
 }
 
+/**
+ * 带重试地调用 `createMesh`。
+ *
+ * 被推迟（返回 `undefined`）或抛错时让出事件循环再试。
+ *
+ * @param data 量化 Mesh 地形数据
+ * @param tilingScheme 瓦片方案
+ * @param tile 瓦片坐标
+ * @param maxAttempts 总尝试次数
+ * @returns 解码后的 Mesh；全部失败时为 `undefined`
+ */
 async function createMeshWithRetry(
   data: MeshTerrainData,
   tilingScheme: Cesium.TilingScheme,
@@ -355,6 +484,16 @@ async function createMeshWithRetry(
   return undefined;
 }
 
+/**
+ * 解码一块地形 Mesh：丢弃 skirt，顶点映射到高度图 NDC，z 保留米制高程。
+ *
+ * NDC x：西 = -1，东 = +1；NDC y：南 = -1，北 = +1。
+ *
+ * @param mesh 量化 Mesh
+ * @param rectangle 高度图覆盖范围
+ * @param ellipsoid 用于笛卡尔 → 地理坐标
+ * @returns 解码结果；编码不可用或没有有效高程时返回 `undefined`
+ */
 function decodeMesh(
   mesh: TerrainMeshLike,
   rectangle: Cesium.Rectangle,
@@ -397,6 +536,12 @@ function decodeMesh(
   return { positions, indices, minHeight, maxHeight };
 }
 
+/**
+ * 复制不含 skirt 的三角形索引。超过 65535 时使用 `Uint32Array`。
+ *
+ * @param mesh 量化 Mesh
+ * @returns 地表索引；没有有效索引时为 `undefined`
+ */
 function copySurfaceIndices(mesh: TerrainMeshLike): Uint16Array | Uint32Array | undefined {
   const count = mesh.indexCountWithoutSkirts > 0 ? mesh.indexCountWithoutSkirts : mesh.indices.length;
   if (count <= 0) return undefined;
@@ -414,10 +559,25 @@ function copySurfaceIndices(mesh: TerrainMeshLike): Uint16Array | Uint32Array | 
   return indices;
 }
 
+/**
+ * 判断 TerrainData 是否提供 `createMesh`（量化 Mesh 地形）。
+ *
+ * @param data 地形数据
+ * @returns 是否为 Mesh 地形
+ */
 function isMeshTerrainData(data: Cesium.TerrainData): data is MeshTerrainData {
   return typeof (data as MeshTerrainData).createMesh === "function";
 }
 
+/**
+ * 解析为正整数；未传则用 `fallback`。
+ *
+ * @param value 调用方传入值
+ * @param fallback 缺省值
+ * @param name 字段名，用于错误信息
+ * @returns 正整数
+ * @throws 不是 ≥ 1 的整数时抛出
+ */
 function positiveInteger(value: number | undefined, fallback: number, name: string): number {
   const resolved = value ?? fallback;
   if (!Number.isInteger(resolved) || resolved < 1) {
@@ -426,14 +586,32 @@ function positiveInteger(value: number | undefined, fallback: number, name: stri
   return resolved;
 }
 
+/**
+ * 将 `value` 限制在 `[min, max]`。
+ *
+ * @param value 原始值
+ * @param min 下限
+ * @param max 上限
+ * @returns 夹紧后的值
+ */
 function clamp(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, value));
 }
 
+/**
+ * 让出当前事件循环，给 Cesium 请求调度器腾出配额。
+ *
+ * @returns 在下一个宏任务中 resolve 的 Promise
+ */
 function yieldEventLoop(): Promise<void> {
   return delay(0);
 }
 
+/**
+ * 延迟指定毫秒。
+ *
+ * @param milliseconds 等待时长
+ */
 function delay(milliseconds: number): Promise<void> {
   return new Promise(resolve => {
     setTimeout(resolve, milliseconds);
