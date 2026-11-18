@@ -1,5 +1,8 @@
 <style>
   @import url(../../templates/bucket.css);
+  #cesiumContainer canvas.selecting-terrain {
+    cursor: crosshair;
+  }
   #terrainNotice {
     display: none;
     position: absolute;
@@ -14,5 +17,5 @@
   }
 </style>
 <div id="cesiumContainer" class="fullSize"></div>
-<div id="terrainNotice"></div>
+<div id="terrainNotice" role="status"></div>
 <div id="loadingOverlay"><h1>Loading...</h1></div>

@@ -62,6 +62,7 @@ cesium-examples/
 - [雷达扫描](gallery/cesium/radar-scan)演示 `RadarScanPrimitive` 多实例渲染与参数调节。
 - [发光墙](gallery/cesium/glow-wall)演示 `GlowWallPrimitive` 与流动贴图。
 - [地形高度图](gallery/cesium/terrain-height-map)演示通过 `createTerrainHeightMap` 生成 GPU 浮点高度图，使用 ArcGIS World Elevation 地形服务。
+- [WebGPU 地形径流](gallery/cesium/terrain-runoff)演示用 `createWebGpuTerrainHeightMap` 的纹理直接计算坡面径流，并在 Cesium 中预览水深。需要支持 WebGPU 的浏览器和 HTTPS 或 localhost；这是教学模型，不用于洪水预测。
 - [WMS](gallery/cesium/web-map-service-wms)与[带时间参数的 WMTS](gallery/cesium/web-map-tile-service-with-time)演示影像服务加载。
 - [几何层级](gallery/cesium/z-indexing-geometry)演示几何体叠放效果。
 

@@ -1,0 +1,6 @@
+title: WebGPU 地形径流
+description: 在贡嘎山附近模拟简化的降雨径流。WebGPU 直接采样地形高度图，逐步计算水深，Cesium 以蓝色叠加显示结果。
+labels:
+  - Terrain
+  - WebGPU
+  - cesium-exts
