@@ -3,7 +3,7 @@ import type * as Cesium from "cesium";
 /**
  * 地形瓦片坐标。
  *
- * `level` 是 availability 收敛、并按 `maxTiles` 下调之后的级别，不一定等于请求时传入的上限。
+ * 用于标识一次瓦片请求。高度图结果中的坐标采用实际选定的地形级别。
  */
 export interface TerrainTileRef {
   /** 瓦片列号（西 → 东）。 */
@@ -17,8 +17,7 @@ export interface TerrainTileRef {
 /**
  * 生成地形高度图的参数。
  *
- * `rectangle` 使用弧度，且不能跨日界线（`east < west`）。
- * 北纬对应纹理顶部（NDC y = +1）。
+ * 两种渲染后端使用相同的输入。矩形坐标使用弧度，跨日期变更线的范围须拆成两个矩形。
  */
 export interface TerrainHeightMapOptions {
   /** 高度图覆盖的地理范围，弧度。 */
@@ -27,14 +26,14 @@ export interface TerrainHeightMapOptions {
   width?: number;
   /** 输出纹理高度，默认 1024。 */
   height?: number;
-  /** 地形级别上限。不传则使用范围内当前可用的最高级别。 */
+  /** 地形级别上限。省略时，由瓦片可用性、探测轮数和瓦片预算决定实际级别。 */
   level?: number;
-  /** 单次允许请求的瓦片数，超出后逐级下调。默认 256。 */
+  /** 相交瓦片预算。超出时逐级下调，最低降到 0 级。默认 256。 */
   maxTiles?: number;
   /**
-   * availability 收敛轮数。默认 24。
+   * 瓦片可用性信息的最大探测轮数。默认 24。
    *
-   * 有的地形服务一开始只知道 0 级，每一级都要再请求一次 tilemap，轮数要够爬到目标级别。
+   * 逐级提供可用性信息的服务（如 ArcGIS World Elevation）可能需要多轮请求才能找到较高的可用级别。
    */
   maxAvailabilityPasses?: number;
   /**
@@ -48,9 +47,9 @@ export interface TerrainHeightMapOptions {
 /**
  * 已经映射到高度图 NDC 的一块地形 Mesh。
  *
- * `positions` 交错存储 `(x, y, heightMeters)`：
- * - `x` / `y` 为 NDC（西 = -1，东 = +1；南 = -1，北 = +1）
- * - `z` 为相对椭球的高程（米）
+ * `positions` 按 `(x, y, heightMeters)` 交错存储。
+ * 矩形西、东边对应 NDC x = -1、+1，南、北边对应 NDC y = -1、+1。
+ * 矩形外的顶点可超出该范围，由栅格化阶段裁剪。
  */
 export interface TerrainHeightMesh {
   /** 交错顶点：`(ndcX, ndcY, heightMeters)`。 */
@@ -78,11 +77,10 @@ export interface ResolvedTerrainTiles {
 }
 
 /**
- * GPU 高度图。
+ * Cesium WebGL 高度图。
  *
- * `texture` 是 RGBA32F：R 为椭球高（米），A 为 1 表示该像素被地形覆盖。
- * {@link TerrainHeightMapResult.readHeights} 只返回 R。行 0 是帧缓冲底部，对应矩形南边，与 `readPixels` 一致。
- * 未覆盖像素为 `NaN`。{@link TerrainHeightMapResult.destroy} 之后纹理和读回都不可再用。
+ * 浮点纹理属于创建高度图的 Cesium 上下文。R 为椭球高（米），A 为 1 表示覆盖，为 0 表示未覆盖。
+ * 读取结果按从南到北、从西到东的顺序排列。用完后调用 {@link TerrainHeightMapResult.destroy}。
  */
 export interface TerrainHeightMapResult {
   /** RGBA32F 高度纹理，R = 高程（米），A = 覆盖标记。 */
@@ -95,18 +93,19 @@ export interface TerrainHeightMapResult {
   readonly width: number;
   /** 纹理高度（像素）。 */
   readonly height: number;
-  /** 参与深度编码的最低高程（米）。 */
+  /** 已解码网格顶点的最低高程（米），包含矩形外的顶点。无可用网格时为 0。 */
   readonly minHeight: number;
-  /** 参与深度编码的最高高程（米）。 */
+  /** 已解码网格顶点的最高高程（米），包含矩形外的顶点。无可用网格时为 0。 */
   readonly maxHeight: number;
   /** 目标级别上与矩形相交的瓦片总数。 */
   readonly tileCount: number;
-  /** 未能加载或解码的瓦片。 */
+  /** 已尝试请求但加载或解码失败的瓦片。服务明确标为不可用的瓦片会被跳过。 */
   readonly missingTiles: readonly TerrainTileRef[];
   /**
-   * 从 GPU 读回 R 通道高程。
+   * 从帧缓冲同步读回高程。调用可能等待 GPU 完成绘制。
    *
-   * @returns 长度为 `width * height` 的数组；行 0 对应南边；未覆盖像素为 `NaN`
+   * @returns 长度为 `width * height` 的数组，未覆盖像素为 `NaN`
+   * @throws 高度图已销毁时抛出
    */
   readHeights(): Float32Array;
   /**
@@ -115,4 +114,21 @@ export interface TerrainHeightMapResult {
    * 重复调用是安全的；之后不可再读回或使用纹理。
    */
   destroy(): void;
+}
+
+/**
+ * WebGPU 高度图。纹理可在创建它的 `GPUDevice` 上绑定，纹理第 0 行对应矩形南边。
+ *
+ * 调用结果的 `destroy()` 释放纹理。设备的生命周期由调用方管理。
+ */
+export interface WebGpuTerrainHeightMapResult extends Omit<TerrainHeightMapResult, "texture" | "readHeights"> {
+  /** `rgba32float` 纹理。R 为椭球高（米），A 为覆盖标记。 */
+  readonly texture: GPUTexture;
+  /**
+   * 异步等待 GPU 复制完成，再将覆盖像素的 R 通道提取到新的数组。
+   *
+   * @returns 长度为 `width * height` 的数组。行 0 对应南边，未覆盖像素为 `NaN`
+   * @throws 高度图已销毁或 GPU 读回失败时拒绝
+   */
+  readHeightsAsync(): Promise<Float32Array>;
 }

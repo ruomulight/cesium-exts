@@ -1,17 +1,24 @@
 import * as Cesium from "cesium";
 
-import type { TerrainHeightMapOptions, TerrainHeightMapResult, TerrainTileRef } from "./types";
+import type {} from "../../../types/cesium-extensions";
+import type {
+  TerrainHeightMapOptions,
+  TerrainHeightMapResult,
+  TerrainTileRef,
+  WebGpuTerrainHeightMapResult
+} from "./types";
 
-import { type RasterizedHeightMap, rasterizeTerrainHeightMap, readHeightTexels } from "./rasterizeHeightMap";
+import { type RasterizedHeightMap, rasterizeWebGlTerrainHeightMap, readWebGlHeightTexels } from "./rasterizeWebGl";
+import { rasterizeWebGpuTerrainHeightMap, readWebGpuHeightTexels } from "./rasterizeWebGpu";
 import { resolveTerrainTiles } from "./resolveTiles";
 
 /** 未指定 `width` / `height` 时的默认纹理边长。 */
 const DEFAULT_TEXTURE_SIZE = 1024;
 
 /**
- * GPU 地形高度图。由 {@link createTerrainHeightMap} 返回。
+ * Cesium WebGL 地形高度图。由 {@link createTerrainHeightMap} 返回。
  *
- * 持有浮点颜色纹理、深度纹理、着色器和各瓦片 VertexArray。
+ * 持有浮点颜色纹理、深度纹理与帧缓冲。绘制用缓冲与着色器在生成时释放。
  * 不再使用时必须调用 {@link TerrainHeightMap.destroy}。
  */
 class TerrainHeightMap implements TerrainHeightMapResult {
@@ -51,7 +58,7 @@ class TerrainHeightMap implements TerrainHeightMapResult {
   }
 
   /**
-   * 从帧缓冲读回 R 通道高程。
+   * 从帧缓冲同步读回 R 通道高程。
    *
    * 行 0 对应矩形南边。未被地形覆盖的像素为 `NaN`。
    *
@@ -62,42 +69,43 @@ class TerrainHeightMap implements TerrainHeightMapResult {
     if (this._destroyed) {
       throw new Error("[createTerrainHeightMap] Cannot read heights after destroy().");
     }
-    return readHeightTexels(this._raster);
+    return readWebGlHeightTexels(this._raster);
   }
 
   /**
-   * 释放纹理、帧缓冲、着色器和 VertexArray。
+   * 释放纹理与帧缓冲。
    *
    * 重复调用是安全的。Framebuffer 持有颜色纹理和深度纹理，一并释放。
    */
   destroy(): void {
     if (this._destroyed) return;
     this._destroyed = true;
-    for (const vertexArray of this._raster.vertexArrays) vertexArray.destroy();
-    this._raster.shaderProgram.destroy();
     // Framebuffer 持有颜色纹理和深度纹理，一并释放。
     this._raster.framebuffer.destroy();
   }
 }
 
 /**
- * 用地形瓦片 Mesh 生成一张浮点高度图。
+ * 使用 Viewer 的 WebGL 上下文生成浮点地形高度图。
  *
- * 先把 availability 收敛到范围内真实存在的最高级别，再把瓦片画进同一张纹理。
- * 适合流体、侵蚀、碰撞这类需要连续高程的计算。点查询仍应使用 `sampleTerrainMostDetailed`。
+ * 在级别上限和瓦片预算内探测可用地形，将选定级别的网格绘制到同一张纹理。
+ * 结果可由同一 Cesium 上下文中的着色器采样，或通过 `readHeights()` 同步读回。
  *
- * @param viewer 已创建场景的 Cesium Viewer
+ * @param viewer 提供渲染上下文及地形提供者的 Cesium Viewer
  * @param options 覆盖范围与纹理尺寸等参数
- * @returns GPU 高度图；使用完毕后调用 {@link TerrainHeightMapResult.destroy}
- * @throws 缺少 Viewer / rectangle、矩形跨日界线或南北颠倒时抛出
+ * @returns WebGL 高度图。使用完毕后调用 {@link TerrainHeightMapResult.destroy}
+ * @throws 输入参数无效、地形提供者缺少 `availability` 或 WebGL 上下文缺少所需支持时拒绝
  *
  * @example
  * ```ts
  * const heightMap = await createTerrainHeightMap(viewer, {
  *   rectangle: Cesium.Rectangle.fromDegrees(116.3, 39.8, 116.5, 40.0)
  * });
- * const heights = heightMap.readHeights();
- * heightMap.destroy();
+ * try {
+ *   const heights = heightMap.readHeights();
+ * } finally {
+ *   heightMap.destroy();
+ * }
  * ```
  */
 export async function createTerrainHeightMap(
@@ -107,6 +115,102 @@ export async function createTerrainHeightMap(
   if (!viewer?.scene) {
     throw new Error("[createTerrainHeightMap] Construction requires a valid Cesium.Viewer instance.");
   }
+  const { rectangle, width, height } = resolveTextureOptions(options);
+  const context = viewer.scene.context;
+  const resolved = await resolveTerrainTiles(viewer.terrainProvider, { ...options, rectangle });
+  const raster = await rasterizeWebGlTerrainHeightMap(
+    context,
+    resolved.meshes,
+    width,
+    height,
+    resolved.minHeight,
+    resolved.maxHeight
+  );
+
+  return new TerrainHeightMap(raster, {
+    rectangle,
+    width,
+    height,
+    level: resolved.level,
+    minHeight: resolved.minHeight,
+    maxHeight: resolved.maxHeight,
+    tileCount: resolved.tileCount,
+    missingTiles: resolved.missingTiles
+  });
+}
+
+/**
+ * 使用调用方的 WebGPU 设备离屏生成地形高度图。
+ *
+ * 结果纹理可绑定到同一设备上的渲染或计算管线。CPU 消费者可用 `readHeightsAsync()` 异步读回。
+ * 用完后调用结果的 `destroy()` 释放纹理。调用方负责管理 `device`。
+ *
+ * @param device 用于绘制及消费高度图的 WebGPU 设备
+ * @param terrainProvider 提供瓦片及 availability 的 Cesium 地形提供者
+ * @param options 覆盖范围与纹理尺寸等参数
+ * @returns WebGPU 高度图，纹理第 0 行对应矩形南边
+ * @throws 输入无效、设备纹理尺寸超限或 WebGPU 管线创建或提交出错时拒绝
+ *
+ * @example
+ * ```ts
+ * const adapter = await navigator.gpu?.requestAdapter();
+ * if (!adapter) throw new Error("WebGPU unavailable");
+ * const device = await adapter.requestDevice();
+ * const heightMap = await createWebGpuTerrainHeightMap(device, viewer.terrainProvider, {
+ *   rectangle: Cesium.Rectangle.fromDegrees(116.3, 39.8, 116.5, 40.0)
+ * });
+ * try {
+ *   const heights = await heightMap.readHeightsAsync();
+ * } finally {
+ *   heightMap.destroy();
+ * }
+ * ```
+ */
+export async function createWebGpuTerrainHeightMap(
+  device: GPUDevice,
+  terrainProvider: Cesium.TerrainProvider,
+  options: TerrainHeightMapOptions
+): Promise<WebGpuTerrainHeightMapResult> {
+  const { rectangle, width, height } = resolveTextureOptions(options);
+  if (Math.max(width, height) > device.limits.maxTextureDimension2D) {
+    throw new Error("[createWebGpuTerrainHeightMap] Height map exceeds the device texture size limit.");
+  }
+
+  const resolved = await resolveTerrainTiles(terrainProvider, { ...options, rectangle });
+  const texture = await rasterizeWebGpuTerrainHeightMap(device, resolved, width, height);
+  let destroyed = false;
+
+  return {
+    texture,
+    rectangle,
+    width,
+    height,
+    level: resolved.level,
+    minHeight: resolved.minHeight,
+    maxHeight: resolved.maxHeight,
+    tileCount: resolved.tileCount,
+    missingTiles: resolved.missingTiles,
+    async readHeightsAsync() {
+      if (destroyed) {
+        throw new Error("[createWebGpuTerrainHeightMap] Cannot read heights after destroy().");
+      }
+      return readWebGpuHeightTexels(device, texture);
+    },
+    destroy() {
+      if (destroyed) return;
+      destroyed = true;
+      texture.destroy();
+    }
+  };
+}
+
+/**
+ * 校验两个渲染入口共用的范围和尺寸，并克隆矩形作为异步生成的输入快照。
+ *
+ * @param options 原始高度图参数
+ * @returns 矩形副本与填充默认值后的纹理尺寸
+ */
+function resolveTextureOptions(options: TerrainHeightMapOptions) {
   if (!Cesium.defined(options?.rectangle)) {
     throw new Error("[createTerrainHeightMap] options.rectangle is required.");
   }
@@ -119,29 +223,11 @@ export async function createTerrainHeightMap(
     throw new Error("[createTerrainHeightMap] Rectangle north must be greater than south.");
   }
 
-  const width = positiveTextureSize(options.width, "width");
-  const height = positiveTextureSize(options.height, "height");
-  const context = viewer.scene.context;
-  const resolved = await resolveTerrainTiles(viewer.terrainProvider, options);
-  const raster = rasterizeTerrainHeightMap(
-    context,
-    resolved.meshes,
-    width,
-    height,
-    resolved.minHeight,
-    resolved.maxHeight
-  );
-
-  return new TerrainHeightMap(raster, {
+  return {
     rectangle: Cesium.Rectangle.clone(options.rectangle),
-    level: resolved.level,
-    width,
-    height,
-    minHeight: resolved.minHeight,
-    maxHeight: resolved.maxHeight,
-    tileCount: resolved.tileCount,
-    missingTiles: resolved.missingTiles
-  });
+    width: positiveTextureSize(options.width, "width"),
+    height: positiveTextureSize(options.height, "height")
+  };
 }
 
 /**

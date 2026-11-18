@@ -62,6 +62,10 @@ const DEFAULT_AVAILABILITY_PASSES = 24;
 const DEFAULT_REQUEST_RETRIES = 5;
 /** 等待未知瓦片变为已知的超时（毫秒）。 */
 const AVAILABILITY_WAIT_MS = 8000;
+/** 限制 Mesh 创建并发，避免同时启动大量 Worker 任务和解码回调。 */
+const MESH_CONCURRENCY = 4;
+/** 单次主线程解码的时间预算（毫秒）。 */
+const DECODE_TIME_SLICE_MS = 4;
 
 /**
  * 把矩形内的地形收敛到稳定 LOD，再解码成高度图 Mesh。
@@ -72,7 +76,7 @@ const AVAILABILITY_WAIT_MS = 8000;
  *
  * @param terrainProvider 必须暴露 `availability`；椭球地形无法生成高度图
  * @param options 覆盖范围与瓦片预算等参数
- * @returns 收敛后的级别、Mesh 以及未能加载的瓦片
+ * @returns 实际级别、解码网格及尝试请求后仍失败的瓦片
  * @throws 地形提供者不带 availability 时抛出
  */
 export async function resolveTerrainTiles(
@@ -156,8 +160,9 @@ async function convergeAvailability(
     // computeBestAvailableLevelOverRectangle 才会升高。
     const deeperLevel = probedLevel + 1;
     const withinCap = levelCap === undefined || deeperLevel <= Math.floor(levelCap);
-    const deeperTiles = withinCap ? listIntersectingTiles(tilingScheme, rectangle, deeperLevel) : [];
-    if (deeperTiles.length > 0 && deeperTiles.length <= maxTiles) {
+    const deeperWithinBudget = withinCap && intersectingTileCount(tilingScheme, rectangle, deeperLevel) <= maxTiles;
+    const deeperTiles = deeperWithinBudget ? listIntersectingTiles(tilingScheme, rectangle, deeperLevel) : [];
+    if (deeperTiles.length > 0) {
       const unknownDeeper = deeperTiles.filter(
         tile => terrainProvider.getTileDataAvailable(tile.x, tile.y, tile.level) === undefined
       );
@@ -167,10 +172,9 @@ async function convergeAvailability(
     }
 
     level = levelFittingTileBudget(availability, tilingScheme, rectangle, levelCap, maxTiles);
-    const deeperSettled =
-      deeperTiles.length === 0 ||
-      deeperTiles.length > maxTiles ||
-      deeperTiles.every(tile => terrainProvider.getTileDataAvailable(tile.x, tile.y, tile.level) !== undefined);
+    const deeperSettled = deeperTiles.every(
+      tile => terrainProvider.getTileDataAvailable(tile.x, tile.y, tile.level) !== undefined
+    );
     if (level === probedLevel && deeperSettled) break;
   }
 
@@ -197,7 +201,7 @@ function levelFittingTileBudget(
   maxTiles: number
 ): number {
   let level = cappedLevel(availability, rectangle, levelCap);
-  while (level > 0 && listIntersectingTiles(tilingScheme, rectangle, level).length > maxTiles) {
+  while (level > 0 && intersectingTileCount(tilingScheme, rectangle, level) > maxTiles) {
     level -= 1;
   }
   return level;
@@ -309,6 +313,28 @@ function listIntersectingTiles(
   rectangle: Cesium.Rectangle,
   level: number
 ): TerrainTileRef[] {
+  const { startX, endX, startY, endY } = intersectingTileRange(tilingScheme, rectangle, level);
+  const tiles: TerrainTileRef[] = [];
+  for (let y = startY; y <= endY; y++) {
+    for (let x = startX; x <= endX; x++) {
+      tiles.push({ x, y, level });
+    }
+  }
+  return tiles;
+}
+
+/** 只计算数量，避免预算检查时分配高层级的整片瓦片列表。 */
+function intersectingTileCount(tilingScheme: Cesium.TilingScheme, rectangle: Cesium.Rectangle, level: number): number {
+  const { startX, endX, startY, endY } = intersectingTileRange(tilingScheme, rectangle, level);
+  return (endX - startX + 1) * (endY - startY + 1);
+}
+
+/** 计算瓦片索引范围，供枚举和预算检查复用。 */
+function intersectingTileRange(
+  tilingScheme: Cesium.TilingScheme,
+  rectangle: Cesium.Rectangle,
+  level: number
+): { startX: number; endX: number; startY: number; endY: number } {
   const lonSpan = rectangle.east - rectangle.west;
   const latSpan = rectangle.north - rectangle.south;
   const west = rectangle.west + lonSpan * 1e-6;
@@ -320,20 +346,14 @@ function listIntersectingTiles(
   const northEast = tilingScheme.positionToTileXY(Cesium.Cartographic.fromRadians(east, north), level);
   const xCount = tilingScheme.getNumberOfXTilesAtLevel(level);
   const yCount = tilingScheme.getNumberOfYTilesAtLevel(level);
-  if (xCount <= 0 || yCount <= 0) return [];
+  if (xCount <= 0 || yCount <= 0) return { startX: 0, endX: -1, startY: 0, endY: -1 };
 
   const startX = clamp(Math.min(southWest.x, northEast.x), 0, xCount - 1);
   const endX = clamp(Math.max(southWest.x, northEast.x), 0, xCount - 1);
   const startY = clamp(Math.min(southWest.y, northEast.y), 0, yCount - 1);
   const endY = clamp(Math.max(southWest.y, northEast.y), 0, yCount - 1);
 
-  const tiles: TerrainTileRef[] = [];
-  for (let y = startY; y <= endY; y++) {
-    for (let x = startX; x <= endX; x++) {
-      tiles.push({ x, y, level });
-    }
-  }
-  return tiles;
+  return { startX, endX, startY, endY };
 }
 
 /**
@@ -396,7 +416,8 @@ async function requestGeometryBatch(
 /**
  * 把已加载的 TerrainData 解码为高度图 NDC Mesh，并统计高程范围。
  *
- * 解码失败的瓦片会追加到 `missingTiles`。没有任何有效 Mesh 时高程范围为 0。
+ * 每批并发创建最多 4 块网格，随后顺序转换坐标，避免多个大瓦片同时在主线程解码。
+ * 解码失败的瓦片会追加到 `missingTiles`。高程范围统计包含整块网格，未纳入有效网格时返回 0。
  *
  * @param tilingScheme 用于椭球与坐标转换
  * @param rectangle 高度图覆盖范围，用于映射 NDC
@@ -413,16 +434,23 @@ async function decodeMeshes(
   missingTiles: TerrainTileRef[]
 ): Promise<{ meshes: TerrainHeightMesh[]; minHeight: number; maxHeight: number }> {
   const ellipsoid = tilingScheme.ellipsoid;
-  const decoded = await Promise.all(
-    loaded.map(async job => {
-      const data = job.data;
-      if (!data || !isMeshTerrainData(data)) return undefined;
-
-      const mesh = await createMeshWithRetry(data, tilingScheme, job.tile, maxAttempts);
-      if (!mesh) return undefined;
-      return decodeMesh(mesh, rectangle, ellipsoid) ?? undefined;
-    })
-  );
+  const decoded: Awaited<ReturnType<typeof decodeMesh>>[] = new Array(loaded.length);
+  for (let offset = 0; offset < loaded.length; offset += MESH_CONCURRENCY) {
+    const batch = loaded.slice(offset, offset + MESH_CONCURRENCY);
+    const meshes = await Promise.all(
+      batch.map(job => {
+        if (!job.data || !isMeshTerrainData(job.data)) return undefined;
+        return createMeshWithRetry(job.data, tilingScheme, job.tile, maxAttempts);
+      })
+    );
+    for (let index = 0; index < batch.length; index++) {
+      const mesh = meshes[index];
+      if (mesh) decoded[offset + index] = await decodeMesh(mesh, rectangle, ellipsoid);
+      // 已解码的顶点缓冲不再需要原始 TerrainData，及时解除引用。
+      delete batch[index]!.data;
+      await yieldEventLoop();
+    }
+  }
 
   const meshes: TerrainHeightMesh[] = [];
   let minHeight = Number.POSITIVE_INFINITY;
@@ -494,17 +522,19 @@ async function createMeshWithRetry(
  * @param ellipsoid 用于笛卡尔 → 地理坐标
  * @returns 解码结果；编码不可用或没有有效高程时返回 `undefined`
  */
-function decodeMesh(
+async function decodeMesh(
   mesh: TerrainMeshLike,
   rectangle: Cesium.Rectangle,
   ellipsoid: Cesium.Ellipsoid
-): { positions: Float32Array; indices: Uint16Array | Uint32Array; minHeight: number; maxHeight: number } | undefined {
+): Promise<
+  { positions: Float32Array; indices: Uint16Array | Uint32Array; minHeight: number; maxHeight: number } | undefined
+> {
   if (typeof mesh.encoding?.decodePosition !== "function" || mesh.stride <= 0) return undefined;
 
   const vertices = mesh.vertices instanceof Float32Array ? mesh.vertices : Float32Array.from(mesh.vertices);
   const vertexCount =
     mesh.vertexCountWithoutSkirts > 0 ? mesh.vertexCountWithoutSkirts : Math.floor(vertices.length / mesh.stride);
-  const indices = copySurfaceIndices(mesh);
+  const indices = surfaceIndices(mesh);
   if (vertexCount <= 0 || !indices) return undefined;
 
   const width = rectangle.east - rectangle.west;
@@ -516,8 +546,14 @@ function decodeMesh(
   const cartographic = new Cesium.Cartographic();
   let minHeight = Number.POSITIVE_INFINITY;
   let maxHeight = Number.NEGATIVE_INFINITY;
+  let sliceStarted = performance.now();
 
   for (let index = 0; index < vertexCount; index++) {
+    // 每处理 256 个顶点检查一次时间预算，减少逐顶点计时开销。
+    if (index % 256 === 0 && performance.now() - sliceStarted >= DECODE_TIME_SLICE_MS) {
+      await yieldEventLoop();
+      sliceStarted = performance.now();
+    }
     mesh.encoding.decodePosition(vertices, index, cartesian);
     Cesium.Cartographic.fromCartesian(cartesian, ellipsoid, cartographic);
     const longitude = cartographic.longitude;
@@ -537,14 +573,18 @@ function decodeMesh(
 }
 
 /**
- * 复制不含 skirt 的三角形索引。超过 65535 时使用 `Uint32Array`。
+ * 取不含 skirt 的三角形索引。类型化数组复用视图，其余输入按最大索引复制。
  *
  * @param mesh 量化 Mesh
  * @returns 地表索引；没有有效索引时为 `undefined`
  */
-function copySurfaceIndices(mesh: TerrainMeshLike): Uint16Array | Uint32Array | undefined {
+function surfaceIndices(mesh: TerrainMeshLike): Uint16Array | Uint32Array | undefined {
   const count = mesh.indexCountWithoutSkirts > 0 ? mesh.indexCountWithoutSkirts : mesh.indices.length;
   if (count <= 0) return undefined;
+  // Cesium Mesh 的索引已是类型化数组；上传前只需视图，无须再次扫描与复制。
+  if (mesh.indices instanceof Uint16Array || mesh.indices instanceof Uint32Array) {
+    return mesh.indices.subarray(0, count);
+  }
 
   let maxIndex = 0;
   for (let index = 0; index < count; index++) {
@@ -599,7 +639,7 @@ function clamp(value: number, min: number, max: number): number {
 }
 
 /**
- * 让出当前事件循环，给 Cesium 请求调度器腾出配额。
+ * 让出当前事件循环，让 Cesium 有机会渲染场景或更新请求调度器。
  *
  * @returns 在下一个宏任务中 resolve 的 Promise
  */
