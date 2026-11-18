@@ -1,12 +1,13 @@
-
 # cesium-exts
+
+[简体中文](README_CN.md)
 
 Based on **pnpm workspace + Turborepo + TypeScript**, this is a Cesium extension monorepo: it consolidates reusable Cesium capability extension libraries, accompanying Vite integration plugins, and a Sandcastle-style online example/debugging application.
 
 ## Project Positioning
 
 - **Target Users**: Frontend and GIS developers who need to integrate CesiumJS into Vite / modern frontend toolchains.
-- **Problem Solved**: Cesium's static assets (Assets / Workers / Widgets / ThirdParty) and `CESIUM_BASE_URL` are cumbersome to configure under Vite; at the same time, it provides ready-made implementations for commonly used visualization extensions such as radar scanning and heatmaps.
+- **Project scope**: The Vite plugin configures Cesium static assets and `CESIUM_BASE_URL`. The extension library provides radar scans, animated glow walls, camera helpers, and terrain height maps.
 
 ## Repository Structure
 
@@ -18,7 +19,7 @@ Based on **pnpm workspace + Turborepo + TypeScript**, this is a Cesium extension
 │       ├── templates/bucket.html # Host template for the preview iframe
 │       └── env/                  # .env / .env.development / .env.production
 ├── packages/
-│   ├── cesium-exts/              # Core extension library (RadarScanPrimitive / camera utils / HeatLayer / WindLayer)
+│   ├── cesium-exts/              # Core extension library (radar, glow wall, camera, terrain height maps)
 │   ├── vite-cesium-plugin/       # Vite plugin: Cesium static asset hosting, CESIUM_BASE_URL injection, artifact copying
 │   └── vite-cesium-sandcastle/   # Vite plugin: Sandcastle runtime (placeholders / bucket templates) + cesium-exts source linking
 ├── tooling/
@@ -32,16 +33,16 @@ Based on **pnpm workspace + Turborepo + TypeScript**, this is a Cesium extension
 
 ## Tech Stack
 
-| Domain | Selection |
-| :--- | :--- |
-| Language | TypeScript (strict, `moduleResolution: bundler`) |
-| Package Manager | pnpm 10 workspace + layered catalogs (`catalog:tooling` / `catalog:cesium`, etc.) |
-| Task Orchestration | Turborepo (`envMode: strict`) |
-| Build | Vite (example app), tsdown (library bundling, ESM + CJS + d.ts) |
-| Example App UI | React 19 + React Compiler, Tailwind CSS 4, Base UI, Monaco Editor |
-| 3D Engine | CesiumJS (declared as `peerDependency` in the library to avoid multiple Cesium instances) |
-| Quality | ESLint flat config (includes perfectionist import sorting), Prettier, husky + lint-staged |
-| Release | Changesets |
+| Domain             | Selection                                                                                 |
+| :----------------- | :---------------------------------------------------------------------------------------- |
+| Language           | TypeScript (strict, `moduleResolution: bundler`)                                          |
+| Package Manager    | pnpm 10 workspace + layered catalogs (`catalog:tooling` / `catalog:cesium`, etc.)         |
+| Task Orchestration | Turborepo (`envMode: strict`)                                                             |
+| Build              | Vite (example app), tsdown (library bundling, ESM + CJS + d.ts)                           |
+| Example App UI     | React 19 + React Compiler, Tailwind CSS 4, Base UI, Monaco Editor                         |
+| 3D Engine          | CesiumJS (declared as `peerDependency` in the library to avoid multiple Cesium instances) |
+| Quality            | ESLint flat config (includes perfectionist import sorting), Prettier, husky + lint-staged |
+| Release            | Changesets                                                                                |
 
 ## Environment Requirements
 
@@ -71,10 +72,10 @@ pnpm lint           # turbo lint: ESLint checking
 pnpm lint:fix       # ESLint auto-fix
 pnpm format         # Prettier formats the entire repository
 pnpm format:check   # Prettier check (suitable for CI)
-pnpm test           # turbo test (test infrastructure not yet connected)
+pnpm test           # turbo test
 pnpm clean          # Cleans build artifacts and cache
 pnpm changeset      # Records change sets
-pnpm release        # Builds and publishes (requires .changeset initialization first)
+pnpm release        # Build and publish with Changesets
 ```
 
 Execute by package:
@@ -113,13 +114,11 @@ export default defineConfig({
 ### 2. Sandcastle Template Placeholder Replacement
 
 ```ts
+import { defineConfig } from "vite";
 import { cesiumExtsDev, cesiumSandcastle } from "vite-cesium-sandcastle";
 
 export default defineConfig({
-  plugins: [
-    cesiumExtsDev(),
-    cesiumSandcastle({ placeholder: "__CESIUM_BASE_URL__", cesiumBaseUrl: "/cesium/" })
-  ]
+  plugins: [cesiumExtsDev(), cesiumSandcastle({ placeholder: "__CESIUM_BASE_URL__", cesiumBaseUrl: "/cesium/" })]
 });
 ```
 
@@ -144,21 +143,43 @@ const radar = new RadarScanPrimitive(viewer, {
 flyToTarget(viewer, { targetPosition: Cesium.Cartesian3.fromDegrees(116.39, 39.91) });
 ```
 
-> `HeatLayer` and `WindLayer` are currently placeholder implementations; APIs are unstable, please do not rely on them in production.
+- [Radar scan](apps/cesium-examples/gallery/cesium/radar-scan) demonstrates `RadarScanPrimitive`.
+- [Glow wall](apps/cesium-examples/gallery/cesium/glow-wall) demonstrates animated textures with `GlowWallPrimitive`.
+- [Terrain height map](apps/cesium-examples/gallery/cesium/terrain-height-map) demonstrates `createTerrainHeightMap`, which rasterizes terrain tile meshes into a floating-point texture over a geographic rectangle.
+
+```ts
+import { Rectangle } from "cesium";
+import { createTerrainHeightMap } from "cesium-exts";
+
+const heightMap = await createTerrainHeightMap(viewer, {
+  rectangle: Rectangle.fromDegrees(116.3, 39.8, 116.5, 40.0)
+});
+try {
+  const heights = heightMap.readHeights();
+} finally {
+  heightMap.destroy();
+}
+```
+
+Split regions that cross the antimeridian before generating height maps. Use `sampleTerrainMostDetailed` for individual elevation queries.
+
+`HeatLayer` wraps an experimental canvas heatmap engine. `WindLayer` is a placeholder.
 
 ## Key Entry Points (for Issue Location)
 
-| File | Purpose |
-| :--- | :--- |
-| `packages/cesium-exts/index.ts` | Library external export entry |
-| `packages/cesium-exts/tsdown.config.ts` | Library bundling config (ESM/CJS, external cesium, d.ts) |
+| File                                                | Purpose                                                            |
+| :-------------------------------------------------- | :----------------------------------------------------------------- |
+| `packages/cesium-exts/index.ts`                     | Library external export entry                                      |
+| `packages/cesium-exts/tsdown.config.ts`             | Library bundling config (ESM/CJS, external cesium, d.ts)           |
 | `packages/cesium-exts/types/cesium-extensions.d.ts` | Supplementary type declarations for Cesium internal rendering APIs |
-| `packages/vite-cesium-plugin/src/index.ts` | Cesium integration plugin main body |
-| `apps/cesium-examples/vite.config.ts` | Example app build and plugin assembly |
-| `apps/cesium-examples/src/util/IframeBridge.ts` | Communication bridge between editor and preview iframe |
-| `pnpm-workspace.yaml` / `turbo.json` | Workspace and task orchestration configuration |
+| `packages/vite-cesium-plugin/src/index.ts`          | Cesium integration plugin main body                                |
+| `apps/cesium-examples/vite.config.ts`               | Example app build and plugin assembly                              |
+| `apps/cesium-examples/src/util/IframeBridge.ts`     | Communication bridge between editor and preview iframe             |
+| `pnpm-workspace.yaml` / `turbo.json`                | Workspace and task orchestration configuration                     |
 
 ## Adding Examples
+
+The gallery highlights the selected example. Copy its URL with the `?id=` parameter to share it.
 
 Create under `apps/cesium-examples/gallery/cesium/<example-name>/`:
 

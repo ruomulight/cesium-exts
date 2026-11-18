@@ -1,11 +1,13 @@
 # cesium-exts
 
+[English](README.md)
+
 基于 **pnpm workspace + Turborepo + TypeScript** 的 Cesium 扩展 monorepo：沉淀可复用的 Cesium 能力扩展库、配套 Vite 集成插件，以及一个 Sandcastle 风格的在线示例/调试应用。
 
 ## 项目定位
 
 - **目标用户**：需要把 CesiumJS 接入 Vite / 现代前端工具链的前端与 GIS 开发者。
-- **解决什么**：Cesium 的静态资源（Assets / Workers / Widgets / ThirdParty）与 `CESIUM_BASE_URL` 在 Vite 下配置繁琐；同时提供雷达扫描、热力图等常用可视化扩展的现成实现。
+- **项目能力**：Vite 插件负责 Cesium 静态资源与 `CESIUM_BASE_URL` 的配置。扩展库提供雷达扫描、动态发光墙、相机工具和地形高度图。
 
 ## 仓库结构
 
@@ -17,7 +19,7 @@
 │       ├── templates/bucket.html # 预览 iframe 的宿主模板
 │       └── env/                  # .env / .env.development / .env.production
 ├── packages/
-│   ├── cesium-exts/              # 扩展库核心（RadarScanPrimitive / camera 工具 / HeatLayer / WindLayer）
+│   ├── cesium-exts/              # 扩展库核心（雷达扫描 / 发光墙 / 相机工具 / 地形高度图）
 │   ├── vite-cesium-plugin/       # Vite 插件：Cesium 静态资源托管、CESIUM_BASE_URL 注入、产物拷贝
 │   └── vite-cesium-sandcastle/   # Vite 插件：Sandcastle 运行时（占位符 / bucket 模板）+ cesium-exts 源码直连
 ├── tooling/
@@ -31,16 +33,16 @@
 
 ## 技术栈
 
-| 领域        | 选型                                                         |
-| ----------- | ------------------------------------------------------------ |
-| 语言        | TypeScript（strict，`moduleResolution: bundler`）            |
+| 领域        | 选型                                                                        |
+| ----------- | --------------------------------------------------------------------------- |
+| 语言        | TypeScript（strict，`moduleResolution: bundler`）                           |
 | 包管理      | pnpm 10 workspace + 分层 catalog（`catalog:tooling` / `catalog:cesium` 等） |
-| 任务编排    | Turborepo（`envMode: strict`）                               |
-| 构建        | Vite（示例应用）、tsdown（库打包，ESM + CJS + d.ts）         |
-| 示例应用 UI | React 19 + React Compiler、Tailwind CSS 4、Base UI、Monaco Editor |
-| 三维引擎    | CesiumJS（库中为 `peerDependency`，避免多份 Cesium 实例）    |
+| 任务编排    | Turborepo（`envMode: strict`）                                              |
+| 构建        | Vite（示例应用）、tsdown（库打包，ESM + CJS + d.ts）                        |
+| 示例应用 UI | React 19 + React Compiler、Tailwind CSS 4、Base UI、Monaco Editor           |
+| 三维引擎    | CesiumJS（库中为 `peerDependency`，避免多份 Cesium 实例）                   |
 | 质量        | ESLint 扁平配置（含 perfectionist 导入排序）、Prettier、husky + lint-staged |
-| 版本发布    | Changesets                                                   |
+| 版本发布    | Changesets                                                                  |
 
 ## 环境要求
 
@@ -70,10 +72,10 @@ pnpm lint           # turbo lint：ESLint 检查
 pnpm lint:fix       # ESLint 自动修复
 pnpm format         # Prettier 格式化全仓
 pnpm format:check   # Prettier 校验（适合 CI）
-pnpm test           # turbo test（测试基建尚未接入）
+pnpm test           # turbo test
 pnpm clean          # 清理构建产物与缓存
 pnpm changeset      # 记录变更集
-pnpm release        # 构建并发布（需先初始化 .changeset）
+pnpm release        # 构建并通过 Changesets 发布
 ```
 
 按包执行：
@@ -112,13 +114,11 @@ export default defineConfig({
 ### 2. Sandcastle 模板占位符替换
 
 ```ts
+import { defineConfig } from "vite";
 import { cesiumExtsDev, cesiumSandcastle } from "vite-cesium-sandcastle";
 
 export default defineConfig({
-  plugins: [
-    cesiumExtsDev(),
-    cesiumSandcastle({ placeholder: "__CESIUM_BASE_URL__", cesiumBaseUrl: "/cesium/" })
-  ]
+  plugins: [cesiumExtsDev(), cesiumSandcastle({ placeholder: "__CESIUM_BASE_URL__", cesiumBaseUrl: "/cesium/" })]
 });
 ```
 
@@ -143,7 +143,27 @@ const radar = new RadarScanPrimitive(viewer, {
 flyToTarget(viewer, { targetPosition: Cesium.Cartesian3.fromDegrees(116.39, 39.91) });
 ```
 
-> `HeatLayer` 与 `WindLayer` 目前仍是占位实现，API 未稳定，请勿在生产中依赖。
+- [雷达扫描](apps/cesium-examples/gallery/cesium/radar-scan)展示 `RadarScanPrimitive`。
+- [发光墙](apps/cesium-examples/gallery/cesium/glow-wall)展示如何使用 `GlowWallPrimitive` 实现贴图流动。
+- [地形高度图](apps/cesium-examples/gallery/cesium/terrain-height-map)展示如何使用 `createTerrainHeightMap` 将指定地理矩形内的地形瓦片网格栅格化为浮点纹理。
+
+```ts
+import { Rectangle } from "cesium";
+import { createTerrainHeightMap } from "cesium-exts";
+
+const heightMap = await createTerrainHeightMap(viewer, {
+  rectangle: Rectangle.fromDegrees(116.3, 39.8, 116.5, 40.0)
+});
+try {
+  const heights = heightMap.readHeights();
+} finally {
+  heightMap.destroy();
+}
+```
+
+跨日期变更线的区域需要先拆分。查询单点高程时，可使用 `sampleTerrainMostDetailed`。
+
+`HeatLayer` 封装了实验性的 Canvas 热力图引擎。`WindLayer` 目前为占位实现。
 
 ## 关键入口（便于定位问题）
 
@@ -158,6 +178,8 @@ flyToTarget(viewer, { targetPosition: Cesium.Cartesian3.fromDegrees(116.39, 39.9
 | `pnpm-workspace.yaml` / `turbo.json`                | workspace 与任务编排配置                     |
 
 ## 新增示例
+
+画廊会高亮当前示例。复制带有 `?id=` 参数的地址即可分享该示例。
 
 在 `apps/cesium-examples/gallery/cesium/<example-name>/` 下创建：
 
