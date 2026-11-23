@@ -20,5 +20,4 @@ export type {
   WebGpuTerrainHeightMapResult
 } from "./src/utils";
 
-export { HeatLayer } from "./src/visualization/heatmap";
 export { WindLayer } from "./src/visualization/wind";
