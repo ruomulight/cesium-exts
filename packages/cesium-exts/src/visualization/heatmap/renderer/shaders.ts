@@ -1,10 +1,12 @@
 /**
  * 热力图 WebGL 着色器。
  *
- * 绘制分两步：先把径向模糊点累加到 alpha 纹理，再按调色板上色输出到屏幕。
+ * @remarks
+ * 绘制分两步：先以 source-over 将径向模糊点合成到 alpha 纹理，再按调色板上色。
+ * 点强度在 CPU 上归一化，片元阶段仅处理径向衰减与色带查表。
  */
 
-/** 将画布像素坐标转为 clip space，Y 轴翻转以对齐 Canvas2D 左上原点。 */
+/** 将画布像素坐标转为裁剪空间，翻转 Y 轴以使用左上角原点。 */
 export const VERTEX_SHADER_POINT = `
   attribute vec2 a_position;
   attribute float a_intensity;
@@ -21,7 +23,10 @@ export const VERTEX_SHADER_POINT = `
 
 /**
  * 点精灵径向衰减。与 Canvas2D `createRadialGradient` 一致：内圈实心，向外线性降到 0。
+ *
+ * @remarks
  * `u_blur=0.85` 时内圈半径约为点半径的 15%。
+ * 输出 RGB 为零，仅由 alpha 参与强度合成。
  */
 export const FRAGMENT_SHADER_POINT = `
   precision mediump float;
@@ -52,7 +57,13 @@ export const VERTEX_SHADER_SCREEN = `
   }
 `;
 
-/** 用 256×1 调色板将强度映射为颜色，透明度规则与 Canvas2D `_colorize` 对齐。 */
+/**
+ * 用 256×1 调色板将强度映射为颜色，透明度规则与 Canvas2D 后端一致。
+ *
+ * @remarks
+ * 先将强度量化为字节，再采样对应纹素的中心，避免边界采样偏移。
+ * 最终颜色使用直通 alpha 写入输出缓冲，因此上色阶段须禁用混合。
+ */
 export const FRAGMENT_SHADER_COLORIZE = `
   precision mediump float;
   varying vec2 v_texCoord;
@@ -78,10 +89,6 @@ export const FRAGMENT_SHADER_COLORIZE = `
       finalAlpha = clamp(alpha, u_minOpacity, u_maxOpacity);
     }
 
-    if (u_useGradientOpacity) {
-      gl_FragColor = vec4(color.rgb, color.a);
-    } else {
-      gl_FragColor = vec4(color.rgb, finalAlpha);
-    }
+    gl_FragColor = vec4(color.rgb, u_useGradientOpacity ? color.a : finalAlpha);
   }
 `;
