@@ -12,6 +12,7 @@
  */
 
 import { loader } from "@monaco-editor/react";
+import cesiumTypes from "cesium/Source/Cesium.d.ts?raw";
 import * as monaco from "monaco-editor";
 import editorWorker from "monaco-editor/esm/vs/editor/editor.worker?worker";
 import cssWorker from "monaco-editor/esm/vs/language/css/css.worker?worker";
@@ -38,3 +39,17 @@ self.MonacoEnvironment = {
 
 // 让 @monaco-editor/react 使用本地 monaco-editor 包，而非 CDN
 loader.config({ monaco });
+
+// 浏览器中的语言服务无法读取 node_modules，需显式注册 Cesium 的模块声明。
+// Cesium.d.ts 本身包含 declare module "cesium"，可直接解析示例中的包导入。
+for (const defaults of [monaco.typescript.javascriptDefaults, monaco.typescript.typescriptDefaults]) {
+  defaults.setCompilerOptions({
+    ...defaults.getCompilerOptions(),
+    target: monaco.typescript.ScriptTarget.ESNext,
+    module: monaco.typescript.ModuleKind.ESNext,
+    moduleResolution: monaco.typescript.ModuleResolutionKind.NodeJs,
+    allowNonTsExtensions: true,
+    allowJs: true
+  });
+  defaults.addExtraLib(cesiumTypes, "file:///node_modules/@types/cesium/index.d.ts");
+}
