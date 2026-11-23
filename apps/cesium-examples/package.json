@@ -14,6 +14,7 @@
     "@base-ui/react": "1.6.0",
     "@fontsource-variable/geist": "5.2.9",
     "@iconify-json/mdi": "catalog:react-app",
+    "@iconify-json/simple-icons": "catalog:react-app",
     "@iconify/react": "catalog:react-app",
     "@monaco-editor/react": "4.7.0",
     "@tailwindcss/vite": "4.3.2",

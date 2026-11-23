@@ -51,6 +51,7 @@ catalogs:
     babel-plugin-react-compiler: ^1.0.0
     "@iconify/react": 6.0.2
     "@iconify-json/mdi": 1.2.3
+    "@iconify-json/simple-icons": 1.2.103
 
   # ── Cesium 插件专属依赖 ─────────────────────────────
   cesium-plugin:

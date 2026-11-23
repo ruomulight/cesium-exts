@@ -54,6 +54,9 @@ catalogs:
     '@iconify-json/mdi':
       specifier: 1.2.3
       version: 1.2.3
+    '@iconify-json/simple-icons':
+      specifier: 1.2.103
+      version: 1.2.103
     '@iconify/react':
       specifier: 6.0.2
       version: 6.0.2
@@ -153,6 +156,9 @@ importers:
       '@iconify-json/mdi':
         specifier: catalog:react-app
         version: 1.2.3
+      '@iconify-json/simple-icons':
+        specifier: catalog:react-app
+        version: 1.2.103
       '@iconify/react':
         specifier: catalog:react-app
         version: 6.0.2(react@19.2.8)
@@ -951,6 +957,9 @@ packages:
 
   '@iconify-json/mdi@1.2.3':
     resolution: {integrity: sha512-O3cLwbDOK7NNDf2ihaQOH5F9JglnulNDFV7WprU2dSoZu3h3cWH//h74uQAB87brHmvFVxIOkuBX2sZSzYhScg==}
+
+  '@iconify-json/simple-icons@1.2.103':
+    resolution: {integrity: sha512-FMn+aVTsqQdYOwf5reCXXtfWapb+4ijI6WrU8ej1spWXWfA+d41TBXcKagHFwiHZyqt7kP7F04AiG1dYj2R06w==}
 
   '@iconify/react@6.0.2':
     resolution: {integrity: sha512-SMmC2sactfpJD427WJEDN6PMyznTFMhByK9yLW0gOTtnjzzbsi/Ke/XqsumsavFPwNiXs8jSiYeZTmLCLwO+Fg==}
@@ -4439,6 +4448,10 @@ snapshots:
   '@humanwhocodes/retry@0.4.3': {}
 
   '@iconify-json/mdi@1.2.3':
+    dependencies:
+      '@iconify/types': 2.0.0
+
+  '@iconify-json/simple-icons@1.2.103':
     dependencies:
       '@iconify/types': 2.0.0
 

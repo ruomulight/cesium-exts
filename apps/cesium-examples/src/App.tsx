@@ -199,7 +199,7 @@ function App() {
               title="cesium示例"
               onClick={() => setActiveView("gallery")}
             >
-              <Icon icon="mdi:file-image-marker" className="text-xl" />
+              <Icon icon="simple-icons:cesium" className="text-xl" />
             </Button>
 
             <Button
