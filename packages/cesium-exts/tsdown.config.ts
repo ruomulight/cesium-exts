@@ -19,7 +19,7 @@ export default defineConfig({
 
   // cesium 为 peerDependency，保持 external 不打包进产物，由使用方提供
   deps: {
-    neverBundle: [/^cesium/]
+    neverBundle: [/^cesium(?:\/|$)/]
   },
 
   // 生成类型声明；cjsReexport 让 .d.cts 复用 .d.mts（双格式同一 outDir），避免双模块类型冲突（TS2352）
@@ -39,8 +39,8 @@ export default defineConfig({
   // 开启 tree-shaking，剔除未使用的模块代码
   treeshake: true,
 
-  // 复制自定义的 Cesium 内部类型声明到 dist，供深层渲染场景（自定义 Shader / Primitive）的消费者引用
-  copy: [{ from: "types/cesium-extensions.d.ts", to: "dist/types" }],
+  // 跟随实际输出目录复制类型声明，避免修改 outDir 时遗漏文件
+  copy: options => [{ from: "types/cesium-extensions.d.ts", to: `${options.outDir}/types` }],
 
   // CLI 输出中显示的名称
   name: "cesium-exts"
