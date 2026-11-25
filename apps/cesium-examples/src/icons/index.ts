@@ -1,21 +1,44 @@
-/**
- * @file Iconify 离线图标注册。
- *
- * `@iconify/react` 默认向 Iconify API 按需拉取图标数据。
- * 这里改用官方离线入口，在首屏渲染前把图标集合注册进本地存储。
- * 业务组件继续写 `<Icon icon="mdi:..." />` 等名称，未注册的图标不会发起远程请求。
- *
- * 只安装实际用到的集合（当前为 logos、mdi 和 simple-icons）。不要引入包含全部图标库的 `@iconify/json`。
- * 新增其他前缀时，安装对应的 `@iconify-json/*` 并在此处再调用一次 `addCollection`。
- *
- * 必须在应用入口于 `createRoot().render()` 之前以副作用导入。
- */
+﻿/** 离线注册实际使用的图标；新增图标时导入并在此注册。 */
+import openlayers from "@iconify-icons/logos/openlayers";
+import alertOutline from "@iconify-icons/mdi/alert-outline";
+import applicationBracesOutline from "@iconify-icons/mdi/application-braces-outline";
+import ban from "@iconify-icons/mdi/ban";
+import chevronRight from "@iconify-icons/mdi/chevron-right";
+import closeCircleOutline from "@iconify-icons/mdi/close-circle-outline";
+import codeTags from "@iconify-icons/mdi/code-tags";
+import consoleLine from "@iconify-icons/mdi/console-line";
+import monitor from "@iconify-icons/mdi/monitor";
+import moonWaningCrescent from "@iconify-icons/mdi/moon-waning-crescent";
+import play from "@iconify-icons/mdi/play";
+import redo from "@iconify-icons/mdi/redo";
+import settingsOutline from "@iconify-icons/mdi/settings-outline";
+import shareVariant from "@iconify-icons/mdi/share-variant";
+import undo from "@iconify-icons/mdi/undo";
+import whiteBalanceSunny from "@iconify-icons/mdi/white-balance-sunny";
+import cesium from "@iconify-icons/simple-icons/cesium";
+import { addIcon } from "@iconify/react/offline";
 
-import { icons as logosIcons } from "@iconify-json/logos";
-import { icons as mdiIcons } from "@iconify-json/mdi";
-import { icons as simpleIcons } from "@iconify-json/simple-icons";
-import { addCollection } from "@iconify/react/offline";
+// 使用显式导入，使打包工具只包含用到的图标。
+const icons = {
+  "logos:openlayers": openlayers,
+  "simple-icons:cesium": cesium,
+  "mdi:alert-outline": alertOutline,
+  "mdi:application-braces-outline": applicationBracesOutline,
+  "mdi:ban": ban,
+  "mdi:chevron-right": chevronRight,
+  "mdi:close-circle-outline": closeCircleOutline,
+  "mdi:code-tags": codeTags,
+  "mdi:console-line": consoleLine,
+  "mdi:monitor": monitor,
+  "mdi:moon-waning-crescent": moonWaningCrescent,
+  "mdi:play": play,
+  "mdi:redo": redo,
+  "mdi:settings-outline": settingsOutline,
+  "mdi:share-variant": shareVariant,
+  "mdi:undo": undo,
+  "mdi:white-balance-sunny": whiteBalanceSunny
+};
 
-addCollection(logosIcons);
-addCollection(mdiIcons);
-addCollection(simpleIcons);
+for (const [name, data] of Object.entries(icons)) {
+  addIcon(name, data);
+}
