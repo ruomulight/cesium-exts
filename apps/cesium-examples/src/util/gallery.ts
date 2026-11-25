@@ -2,7 +2,8 @@ import { parse } from "yaml";
 
 import type { GalleryItem, SandcastleYamlConfig } from "@/types/sandcastle";
 
-import placeholderThumb from "../../gallery/cesium/placeholder-thumbnail.jpg";
+import cesiumPlaceholderThumb from "../../gallery/cesium/placeholder-thumbnail.jpg";
+import openLayersPlaceholderThumb from "../../gallery/openlayers/placeholder-thumbnail.jpg";
 
 const yamlModules = import.meta.glob("/gallery/**/sandcastle.yaml", { eager: true, query: "?raw", import: "default" });
 const codeModules = import.meta.glob("/gallery/**/main.js", { eager: true, query: "?raw", import: "default" });
@@ -43,9 +44,13 @@ export function getGalleryItems(): GalleryItem[] {
       const dir = yamlPath.slice(0, yamlPath.length - "sandcastle.yaml".length);
       const segments = yamlPath.split("/");
       const name = segments[segments.length - 2];
+      const category = segments[2];
+      if (category !== "cesium" && category !== "openlayers") return null;
       const code = codeModules[`${dir}main.js`];
       const html = htmlModules[`${dir}index.html`];
-      const thumbnailUrl = thumbModules[`${dir}thumbnail.jpg`] ?? placeholderThumb;
+      const thumbnailUrl =
+        thumbModules[`${dir}thumbnail.jpg`] ??
+        (category === "openlayers" ? openLayersPlaceholderThumb : cesiumPlaceholderThumb);
 
       const config = parse(text) as Partial<SandcastleYamlConfig>;
       if (!code || !html || typeof config.title !== "string" || typeof config.description !== "string") {
@@ -54,7 +59,9 @@ export function getGalleryItems(): GalleryItem[] {
       }
 
       return {
-        name,
+        // 保留既有 Cesium 链接；其他画廊加前缀以避免目录名冲突。
+        name: category === "openlayers" ? `openlayers/${name}` : name,
+        category,
         title: config.title,
         description: config.description,
         labels: config.labels ?? [],

@@ -29,6 +29,7 @@ pnpm --filter cesium-examples preview
 ## 浏览、编辑与分享
 
 - 点击画廊卡片直接运行示例，点击卡片上的代码图标进入编辑器。
+- 左侧 Cesium 和 OpenLayers 按钮分别打开对应的示例画廊。
 - 编辑器分别编辑 JavaScript 和 HTML/CSS。修改后点击“运行”，预览 iframe 会重新加载并执行当前代码。
 - 展开预览下方的控制台查看运行日志、警告和错误。
 - 内置示例通过 `?id=<目录名>` 定位，例如 `?id=radar-scan`。复制地址栏链接即可分享该示例。
@@ -71,6 +72,7 @@ cesium-examples/
 ## 新增示例
 
 在 `gallery/cesium/<example-name>/` 下创建以下文件，目录名作为 URL 中的示例 ID。
+OpenLayers 示例使用同样的文件结构，放在 `gallery/openlayers/<example-name>/`；其 URL ID 为 `openlayers/<example-name>`，避免与 Cesium 示例重名。
 
 ```text
 my-example/
@@ -109,6 +111,7 @@ const viewer = new Cesium.Viewer("cesiumContainer", {
 ```
 
 运行器会将上述 Cesium 命名空间导入转换为 iframe 中已加载的全局 `Cesium`。模板同时为 `cesium-exts` 和 `tweakpane` 提供 import map，可以在示例脚本中直接导入它们。
+OpenLayers 示例可使用预览环境提供的全局 `ol` 对象及其样式，参见 [基础地图](gallery/openlayers/basic-map)。示例使用的 OpenStreetMap 瓦片需要网络连接。
 
 画廊通过 `import.meta.glob` 自动发现示例。缺少 `main.js`、`index.html`、有效标题或描述的条目会被跳过，并在浏览器控制台输出警告。`thumbnail.jpg` 可选，缺省时使用公共占位图。
 

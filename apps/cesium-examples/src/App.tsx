@@ -3,7 +3,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { usePanelRef } from "react-resizable-panels";
 
 import type { ConsoleMessage, ConsoleMessageType } from "@/components/ConsoleMirror/ConsoleMirror";
-import type { GalleryItem } from "@/types/sandcastle";
+import type { GalleryCategory, GalleryItem } from "@/types/sandcastle";
 
 import Bucket from "@/components/Bucket/Bucket";
 import ConsoleMirror from "@/components/ConsoleMirror/ConsoleMirror";
@@ -24,7 +24,7 @@ const LIBRARY_VERSIONS = [
   { label: "Cesium", version: cesiumVersion() }
 ] as const;
 
-type ActiveView = "editor" | "gallery";
+type ActiveView = "editor" | GalleryCategory;
 const MAX_CONSOLE_MESSAGES = 1000;
 
 function Sidebar({ activeView, onViewChange }: { activeView: ActiveView; onViewChange: (view: ActiveView) => void }) {
@@ -32,14 +32,19 @@ function Sidebar({ activeView, onViewChange }: { activeView: ActiveView; onViewC
     <div className="flex w-12 h-full flex-col justify-between py-4 border-r bg-background">
       <div className="flex flex-col items-center gap-4">
         <Button
-          variant={activeView === "gallery" ? "secondary" : "ghost"}
+          variant={activeView === "cesium" ? "secondary" : "ghost"}
           size="icon"
           title="cesium示例"
-          onClick={() => onViewChange("gallery")}
+          onClick={() => onViewChange("cesium")}
         >
           <Icon icon="simple-icons:cesium" className="text-xl" />
         </Button>
-        <Button variant="ghost" size="icon" title="OpenLayers">
+        <Button
+          variant={activeView === "openlayers" ? "secondary" : "ghost"}
+          size="icon"
+          title="OpenLayers示例"
+          onClick={() => onViewChange("openlayers")}
+        >
           <Icon icon="logos:openlayers" className="text-xl" />
         </Button>
         <Button
@@ -112,7 +117,14 @@ function App() {
   // 编辑器实例引用，用于触发 undo / redo 等命令式操作
   const editorRef = useRef<SandcastleEditorHandle>(null);
 
-  const [activeView, setActiveView] = useState<ActiveView>(initialData || galleryId ? "gallery" : "editor");
+  // 从示例链接恢复对应画廊，旧版 Cesium 链接仍保持兼容。
+  const [activeView, setActiveView] = useState<ActiveView>(() =>
+    galleryId
+      ? (getGalleryItems().find(item => item.name === galleryId)?.category ?? "cesium")
+      : initialData
+        ? "cesium"
+        : "editor"
+  );
   // 编辑器 Tab 切换：javascript / html
   const [activeTab, setActiveTab] = useState("javascript");
   const [shareToast, setShareToast] = useState(false);
@@ -225,9 +237,14 @@ function App() {
         {/* 中间主面板:主内容区 */}
         <ResizablePanel defaultSize={600} minSize={400} className="flex flex-col m-1.25!">
           <div className="h-full flex flex-col">
-            {activeView === "gallery" ? (
+            {activeView !== "editor" ? (
               // 画廊模式:展示内置示例列表
-              <Gallery activeId={galleryId} onRun={handleRunExample} onSelect={handleSelectExample} />
+              <Gallery
+                category={activeView}
+                activeId={galleryId}
+                onRun={handleRunExample}
+                onSelect={handleSelectExample}
+              />
             ) : (
               // 编辑器模式:Tab 切换 JS / HTML，顶栏放置撤销/重做/分享/运行
               <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full h-full flex flex-col">

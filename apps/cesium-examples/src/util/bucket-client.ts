@@ -4,6 +4,8 @@
  */
 
 import DOMPurify from "dompurify";
+import openLayersUrl from "ol/dist/ol.js?url";
+import openLayersCss from "ol/ol.css?inline";
 
 import { originalWarn, wrapConsoleFunctions } from "./ConsoleWrapper";
 import { type BridgeToApp, IframeBridge } from "./IframeBridge";
@@ -56,11 +58,22 @@ function loadSandcastle(code: string, html: string) {
   document.body.dataset.sandcastleLoaded = "yes";
 }
 
-/**
- * 页面初始化函数。
- * 设置必要的全局变量，建立 IframeBridge，并注册消息监听器以便接收来自桌面的代码执行指令。
- */
-function initPage() {
+/** 加载随构建产物分发的 OpenLayers 全局包，供示例中的 `ol` 使用。 */
+function loadOpenLayers(): Promise<void> {
+  const style = document.createElement("style");
+  style.textContent = openLayersCss;
+  document.head.appendChild(style);
+  return new Promise((resolve, reject) => {
+    const script = document.createElement("script");
+    script.src = openLayersUrl;
+    script.onload = () => resolve();
+    script.onerror = () => reject(new Error("无法加载 OpenLayers"));
+    document.head.appendChild(script);
+  });
+}
+
+/** 初始化通信，并在运行时准备好后通知父页面执行示例。 */
+async function initPage() {
   // 设置此变量，以便辅助函数知道将消息发送到何处
   window.SANDCASTLE_OUTER_ORIGIN = OUTER_ORIGIN;
 
@@ -76,6 +89,12 @@ function initPage() {
     }
   });
 
+  // 加载失败时仍允许 Cesium 示例运行，并把错误回传给控制台。
+  try {
+    await loadOpenLayers();
+  } catch (error) {
+    console.error(error);
+  }
   bridge.sendMessage({ type: "bucketReady" });
 }
 

@@ -64,6 +64,8 @@ function OverflowText({ text, className }: { text: string; className?: string })
 }
 
 interface GalleryProps {
+  /** 当前展示的示例分类 */
+  category: GalleryItem["category"];
   /** 地址栏 `?id=` 对应的示例。卡片高亮与右侧预览使用同一份 id */
   activeId?: string | null;
   /** 点击卡片：直接运行示例，停留在画廊视图查看效果 */
@@ -77,9 +79,9 @@ interface GalleryProps {
  * 以官方 Sandcastle 风格的纵向列表展示可用示例（横向卡片：缩略图 + 标题/描述 + 标签），
  * 点击卡片直接运行示例（onRun），点击标题右侧的代码图标进入编辑器（onSelect）
  */
-export default function Gallery({ activeId, onRun, onSelect }: GalleryProps) {
-  // glob 模块常量在 HMR 时会重新求值，因此使用空依赖数组即可
-  const items = useMemo(() => getGalleryItems(), []);
+export default function Gallery({ activeId, category, onRun, onSelect }: GalleryProps) {
+  // 切换画廊时重新筛选，保留现有卡片和预览交互。
+  const items = useMemo(() => getGalleryItems().filter(item => item.category === category), [category]);
 
   if (items.length === 0) {
     return (

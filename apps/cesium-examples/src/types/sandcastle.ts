@@ -21,8 +21,12 @@ export interface SandcastleYamlConfig {
 /**
  * Gallery示例项的完整数据结构
  */
+export type GalleryCategory = "cesium" | "openlayers";
+
 export interface GalleryItem {
-  /** 目录名，作为唯一标识 */
+  /** 示例所属画廊，与 gallery 下的目录对应 */
+  category: GalleryCategory;
+  /** URL 示例标识；OpenLayers 示例带分类前缀 */
   name: string;
   /** 示例标题 */
   title: string;

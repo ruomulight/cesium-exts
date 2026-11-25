@@ -26,6 +26,7 @@
     "dompurify": "3.4.12",
     "lucide-react": "1.23.0",
     "monaco-editor": "0.55.1",
+    "ol": "catalog:openlayers",
     "pako": "3.0.1",
     "react": "catalog:react-app",
     "react-dom": "catalog:react-app",
