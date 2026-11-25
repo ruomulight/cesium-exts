@@ -51,12 +51,15 @@ catalogs:
     '@babel/core':
       specifier: ^8.0.1
       version: 8.0.1
-    '@iconify-json/mdi':
-      specifier: 1.2.3
-      version: 1.2.3
-    '@iconify-json/simple-icons':
-      specifier: 1.2.103
-      version: 1.2.103
+    '@iconify-icons/logos':
+      specifier: 2.0.8
+      version: 2.0.8
+    '@iconify-icons/mdi':
+      specifier: 2.0.0
+      version: 2.0.0
+    '@iconify-icons/simple-icons':
+      specifier: 2.0.11
+      version: 2.0.11
     '@iconify/react':
       specifier: 6.0.2
       version: 6.0.2
@@ -153,15 +156,15 @@ importers:
       '@fontsource-variable/geist':
         specifier: 5.2.9
         version: 5.2.9
-      '@iconify-json/logos':
-        specifier: 1.2.21
-        version: 1.2.21
-      '@iconify-json/mdi':
+      '@iconify-icons/logos':
         specifier: catalog:react-app
-        version: 1.2.3
-      '@iconify-json/simple-icons':
+        version: 2.0.8
+      '@iconify-icons/mdi':
         specifier: catalog:react-app
-        version: 1.2.103
+        version: 2.0.0
+      '@iconify-icons/simple-icons':
+        specifier: catalog:react-app
+        version: 2.0.11
       '@iconify/react':
         specifier: catalog:react-app
         version: 6.0.2(react@19.2.8)
@@ -958,14 +961,14 @@ packages:
     resolution: {integrity: sha512-bV0Tgo9K4hfPCek+aMAn81RppFKv2ySDQeMoSZuvTASywNTnVJCArCZE2FWqpvIatKu7VMRLWlR1EazvVhDyhQ==}
     engines: {node: '>=18.18'}
 
-  '@iconify-json/logos@1.2.21':
-    resolution: {integrity: sha512-iGTg0qaVfEvrmz7Cml9zDlv8S5wSOjn9Jg4MoTml9o/GKpMDbeF/tgtbPfR7/0UhzMnBfmmiKeyG6hlR3KpaaA==}
+  '@iconify-icons/logos@2.0.8':
+    resolution: {integrity: sha512-bSyN4dgRCQl70JTY9uRjl+YHhTJNhq9JGltGJmhf7rAce3GMAU1JZwLYJiZuoB1YAwVOGDHTbtARZhgd7v7ERg==}
 
-  '@iconify-json/mdi@1.2.3':
-    resolution: {integrity: sha512-O3cLwbDOK7NNDf2ihaQOH5F9JglnulNDFV7WprU2dSoZu3h3cWH//h74uQAB87brHmvFVxIOkuBX2sZSzYhScg==}
+  '@iconify-icons/mdi@2.0.0':
+    resolution: {integrity: sha512-ppVItcrp6uRn9XYA4e8XkJC6VnFfBGSLJVrTrHrc7ft9iwLVat3u4ol/UldokaSZ2EyWYukdYYT2AhZP0uNOjg==}
 
-  '@iconify-json/simple-icons@1.2.103':
-    resolution: {integrity: sha512-FMn+aVTsqQdYOwf5reCXXtfWapb+4ijI6WrU8ej1spWXWfA+d41TBXcKagHFwiHZyqt7kP7F04AiG1dYj2R06w==}
+  '@iconify-icons/simple-icons@2.0.11':
+    resolution: {integrity: sha512-e5G3K9Z3Tg/ApYO3TUA3VZHgHmPq8Q6T8HuI9HYbt0h/5tsdu3+G33REPAvB2f7hgwe1ItIRFF5TTIi+NNHAYw==}
 
   '@iconify/react@6.0.2':
     resolution: {integrity: sha512-SMmC2sactfpJD427WJEDN6PMyznTFMhByK9yLW0gOTtnjzzbsi/Ke/XqsumsavFPwNiXs8jSiYeZTmLCLwO+Fg==}
@@ -4453,15 +4456,15 @@ snapshots:
 
   '@humanwhocodes/retry@0.4.3': {}
 
-  '@iconify-json/logos@1.2.21':
+  '@iconify-icons/logos@2.0.8':
     dependencies:
       '@iconify/types': 2.0.0
 
-  '@iconify-json/mdi@1.2.3':
+  '@iconify-icons/mdi@2.0.0':
     dependencies:
       '@iconify/types': 2.0.0
 
-  '@iconify-json/simple-icons@1.2.103':
+  '@iconify-icons/simple-icons@2.0.11':
     dependencies:
       '@iconify/types': 2.0.0
 
