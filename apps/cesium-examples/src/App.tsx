@@ -39,9 +39,7 @@ function Sidebar({ activeView, onViewChange }: { activeView: ActiveView; onViewC
         >
           <Icon icon="simple-icons:cesium" className="text-xl" />
         </Button>
-        <Button variant="ghost" size="icon" title="OpenLayers">
-          <Icon icon="logos:openlayers" className="text-xl" />
-        </Button>
+
         <Button
           variant={activeView === "editor" ? "secondary" : "ghost"}
           size="icon"
