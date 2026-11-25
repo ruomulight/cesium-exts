@@ -24,6 +24,43 @@ const LIBRARY_VERSIONS = [
   { label: "Cesium", version: cesiumVersion() }
 ] as const;
 
+type ActiveView = "editor" | "gallery";
+const MAX_CONSOLE_MESSAGES = 1000;
+
+function Sidebar({ activeView, onViewChange }: { activeView: ActiveView; onViewChange: (view: ActiveView) => void }) {
+  return (
+    <div className="flex w-12 h-full flex-col justify-between py-4 border-r bg-background">
+      <div className="flex flex-col items-center gap-4">
+        <Button
+          variant={activeView === "gallery" ? "secondary" : "ghost"}
+          size="icon"
+          title="cesium示例"
+          onClick={() => onViewChange("gallery")}
+        >
+          <Icon icon="simple-icons:cesium" className="text-xl" />
+        </Button>
+        <Button variant="ghost" size="icon" title="OpenLayers">
+          <Icon icon="logos:openlayers" className="text-xl" />
+        </Button>
+        <Button
+          variant={activeView === "editor" ? "secondary" : "ghost"}
+          size="icon"
+          title="编辑器"
+          onClick={() => onViewChange("editor")}
+        >
+          <Icon icon="mdi:application-braces-outline" className="text-xl" />
+        </Button>
+      </div>
+      <div className="flex flex-col items-center gap-4">
+        <ModeToggle />
+        <Button variant="ghost" size="icon" className="h-10 w-10" title="设置">
+          <Icon icon="mdi:settings-outline" className="text-xl" />
+        </Button>
+      </div>
+    </div>
+  );
+}
+
 function VersionBar() {
   return (
     <header className="flex h-9 shrink-0 items-center justify-between gap-3 border-b bg-background px-3">
@@ -75,8 +112,7 @@ function App() {
   // 编辑器实例引用，用于触发 undo / redo 等命令式操作
   const editorRef = useRef<SandcastleEditorHandle>(null);
 
-  // 主视图切换：URL 带数据时默认进编辑器，否则默认进画廊
-  const [activeView, setActiveView] = useState<"editor" | "gallery">(initialData || galleryId ? "gallery" : "editor");
+  const [activeView, setActiveView] = useState<ActiveView>(initialData || galleryId ? "gallery" : "editor");
   // 编辑器 Tab 切换：javascript / html
   const [activeTab, setActiveTab] = useState("javascript");
   const [shareToast, setShareToast] = useState(false);
@@ -120,11 +156,10 @@ function App() {
   /** 点击画廊卡片上的代码图标：载入示例代码并切换到编辑器视图 */
   const handleSelectExample = useCallback(
     (item: GalleryItem) => {
-      dispatch({ type: "setAndRun", code: item.code, html: item.html });
-      setGalleryId(item.name);
+      handleRunExample(item);
       setActiveView("editor");
     },
-    [dispatch, setGalleryId]
+    [handleRunExample]
   );
 
   // 控制台消息列表：由 Bucket 通过 postMessage 回传，ConsoleMirror 渲染
@@ -158,11 +193,7 @@ function App() {
   const appendConsole = useCallback((type: ConsoleMessageType, message: string) => {
     setConsoleMessages(prev => {
       const next = [...prev, { type, message, id: crypto.randomUUID() }];
-      // 限定最多保留 1000 条消息，防止无限增长导致内存溢出
-      if (next.length > 1000) {
-        return next.slice(next.length - 1000);
-      }
-      return next;
+      return next.slice(-MAX_CONSOLE_MESSAGES);
     });
   }, []);
 
@@ -189,38 +220,7 @@ function App() {
       <VersionBar />
       {/* 水平方向可缩放面板组:左栏 | 中栏 | 右栏 */}
       <ResizablePanelGroup orientation="horizontal" className="h-auto min-h-0 flex-1">
-        {/* 左侧侧边栏按钮区域 */}
-        <div className="flex w-12 h-full flex-col justify-between py-4 border-r bg-background">
-          {/* 顶部按钮组:示例画廊、编辑器入口 */}
-          <div className="flex flex-col items-center gap-4">
-            <Button
-              variant={activeView === "gallery" ? "secondary" : "ghost"}
-              size="icon"
-              title="cesium示例"
-              onClick={() => setActiveView("gallery")}
-            >
-              <Icon icon="simple-icons:cesium" className="text-xl" />
-            </Button>
-
-            <Button
-              variant={activeView === "editor" ? "secondary" : "ghost"}
-              size="icon"
-              title="编辑器"
-              onClick={() => setActiveView("editor")}
-            >
-              <Icon icon="mdi:application-braces-outline" className="text-xl" />
-            </Button>
-          </div>
-
-          {/* 底部按钮组:主题切换、设置 */}
-          <div className="flex flex-col items-center gap-4">
-            <ModeToggle />
-
-            <Button variant="ghost" size="icon" className="h-10 w-10" title="设置">
-              <Icon icon="mdi:settings-outline" className="text-xl" />
-            </Button>
-          </div>
-        </div>
+        <Sidebar activeView={activeView} onViewChange={setActiveView} />
 
         {/* 中间主面板:主内容区 */}
         <ResizablePanel defaultSize={600} minSize={400} className="flex flex-col m-1.25!">
