@@ -1,9 +1,14 @@
 import { parse } from "yaml";
 
-import type { GalleryItem, SandcastleYamlConfig } from "@/types/sandcastle";
+import type { GalleryCategory, GalleryItem, SandcastleYamlConfig } from "@/types/sandcastle";
 
 import cesiumPlaceholderThumb from "../../gallery/cesium/placeholder-thumbnail.jpg";
 import openLayersPlaceholderThumb from "../../gallery/openlayers/placeholder-thumbnail.jpg";
+
+const placeholderThumbs: Record<GalleryCategory, string> = {
+  cesium: cesiumPlaceholderThumb,
+  openlayers: openLayersPlaceholderThumb
+};
 
 const yamlModules = import.meta.glob("/gallery/**/sandcastle.yaml", { eager: true, query: "?raw", import: "default" });
 const codeModules = import.meta.glob("/gallery/**/main.js", { eager: true, query: "?raw", import: "default" });
@@ -45,12 +50,11 @@ export function getGalleryItems(): GalleryItem[] {
       const segments = yamlPath.split("/");
       const name = segments[segments.length - 2];
       const category = segments[2];
+      // 忽略不属于已支持画廊的目录，避免将其他资源误当作示例。
       if (category !== "cesium" && category !== "openlayers") return null;
       const code = codeModules[`${dir}main.js`];
       const html = htmlModules[`${dir}index.html`];
-      const thumbnailUrl =
-        thumbModules[`${dir}thumbnail.jpg`] ??
-        (category === "openlayers" ? openLayersPlaceholderThumb : cesiumPlaceholderThumb);
+      const thumbnailUrl = thumbModules[`${dir}thumbnail.jpg`] ?? placeholderThumbs[category];
 
       const config = parse(text) as Partial<SandcastleYamlConfig>;
       if (!code || !html || typeof config.title !== "string" || typeof config.description !== "string") {

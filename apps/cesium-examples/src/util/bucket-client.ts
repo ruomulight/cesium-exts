@@ -58,7 +58,7 @@ function loadSandcastle(code: string, html: string) {
   document.body.dataset.sandcastleLoaded = "yes";
 }
 
-/** 加载随构建产物分发的 OpenLayers 全局包，供示例中的 `ol` 使用。 */
+/** 加载随构建产物分发的 OpenLayers 全局包和样式，供示例中的 `ol` 使用。 */
 function loadOpenLayers(): Promise<void> {
   const style = document.createElement("style");
   style.textContent = openLayersCss;
@@ -89,6 +89,7 @@ async function initPage() {
     }
   });
 
+  // 等待脚本加载完成再通知父页面，确保示例执行时全局 ol 已就绪。
   // 加载失败时仍允许 Cesium 示例运行，并把错误回传给控制台。
   try {
     await loadOpenLayers();

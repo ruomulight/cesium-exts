@@ -18,11 +18,10 @@ export interface SandcastleYamlConfig {
   thumbnail?: string;
 }
 
-/**
- * Gallery示例项的完整数据结构
- */
+/** 与 gallery 下的分类目录对应。 */
 export type GalleryCategory = "cesium" | "openlayers";
 
+/** Gallery 示例项的完整数据结构。 */
 export interface GalleryItem {
   /** 示例所属画廊，与 gallery 下的目录对应 */
   category: GalleryCategory;
